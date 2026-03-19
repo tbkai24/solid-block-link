@@ -160,7 +160,10 @@ a { color: inherit; text-decoration: none; }
   color: var(--brand);
   letter-spacing: 0.04em;
 }
-.hero-copy h1 { font-size: clamp(2.1rem, 4vw, 3.8rem); max-width: 11ch; }
+.hero-copy h1 { font-size: clamp(2.1rem, 4vw, 3.8rem); max-width: 13ch; }
+.hero-title-line {
+  display: block;
+}
 .hero-copy p, .section-heading p, .feature-card p, .embed-card p, .page-panel p { color: var(--muted); }
 .hero-card, .content-section, .page-panel, .admin-panel { padding: 24px; }
 .hero-card {
@@ -1059,5 +1062,29 @@ a { color: inherit; text-decoration: none; }
   }
   .admin-topbar {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-panel {
+    gap: 18px;
+    padding: 18px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(2rem, 12vw, 3rem);
+    line-height: 0.98;
+    max-width: 9ch;
+    letter-spacing: 0.02em;
+    text-wrap: balance;
+  }
+
+  .hero-copy p {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .hero-card {
+    padding: 18px;
   }
 }
