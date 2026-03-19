@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useSiteContent } from "../hooks/useSiteContent";
 
 export function CampaignsPage() {
@@ -19,9 +20,9 @@ export function CampaignsPage() {
           <h2>{content.currentCampaign.title}</h2>
           <p>{content.currentCampaign.summary}</p>
           <div className="cta-row campaign-page-actions">
-            <a className="button primary" href="/#donation-progress">
+            <Link className="button primary" to="/#donation-progress">
               View Donation Progress
-            </a>
+            </Link>
           </div>
         </article>
 

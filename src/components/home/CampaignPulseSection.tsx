@@ -1,4 +1,5 @@
 import { FiArrowUpRight, FiClock, FiTarget, FiTrendingUp } from "react-icons/fi";
+import { Link } from "react-router-dom";
 import { formatCurrency } from "../../services/format";
 import { CampaignItem, ProgressStats, UpdateItem } from "../../types/content";
 import { SectionHeading } from "../shared/SectionHeading";
@@ -35,7 +36,7 @@ export function CampaignPulseSection({ campaign, progress, updates }: CampaignPu
         copy="A quicker way to scan where the push stands, what needs support next, and where the latest momentum is coming from."
       />
       <div className="pulse-grid">
-        <a className="pulse-card pulse-card-primary" href="/#donation-progress">
+        <Link className="pulse-card pulse-card-primary" to="/#donation-progress">
           <span className="pulse-icon" aria-hidden="true"><FiTrendingUp /></span>
           <p className="pulse-kicker">Live momentum</p>
           <strong>{formatCurrency(progress.totalRaised)}</strong>
@@ -48,9 +49,9 @@ export function CampaignPulseSection({ campaign, progress, updates }: CampaignPu
             Open progress
             <FiArrowUpRight />
           </span>
-        </a>
+        </Link>
 
-        <a className="pulse-card" href="/campaigns">
+        <Link className="pulse-card" to="/campaigns">
           <span className="pulse-icon" aria-hidden="true"><FiTarget /></span>
           <p className="pulse-kicker">Current focus</p>
           <strong>{campaign.title}</strong>
@@ -61,9 +62,9 @@ export function CampaignPulseSection({ campaign, progress, updates }: CampaignPu
             View campaign
             <FiArrowUpRight />
           </span>
-        </a>
+        </Link>
 
-        <a className="pulse-card" href="/updates">
+        <Link className="pulse-card" to="/updates">
           <span className="pulse-icon" aria-hidden="true"><FiClock /></span>
           <p className="pulse-kicker">Latest signal</p>
           <strong>{latestUpdate ? latestUpdate.title : "Awaiting next update"}</strong>
@@ -76,7 +77,7 @@ export function CampaignPulseSection({ campaign, progress, updates }: CampaignPu
             Browse updates
             <FiArrowUpRight />
           </span>
-        </a>
+        </Link>
       </div>
     </section>
   );
