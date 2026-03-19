@@ -9,10 +9,13 @@ export const siteContent: SiteContent = {
   lookupCta: { label: "SBL Lookup", href: "#" },
   about: {
     title: "About Solid Block Link",
+    introTitle: "Introduction",
     intro:
       "Solid Block Link is a fan-powered marketing and donation platform focused on promoting SB19 worldwide through transparent drives, curated updates, and organized campaign action.",
+    storyTitle: "Story",
     story:
       "The platform is built to turn support into visible movement by combining campaigns, donation drives, curated updates, and a clear record of what the community is building together.",
+    missionTitle: "Mission",
     mission:
       "Its mission is to keep supporters informed, make contribution pathways clear, and help every campaign feel measurable, credible, and worth joining."
   },

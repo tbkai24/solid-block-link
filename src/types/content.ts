@@ -41,8 +41,11 @@ export type CampaignItem = {
 
 export type AboutContent = {
   title: string;
+  introTitle: string;
   intro: string;
+  storyTitle: string;
   story: string;
+  missionTitle: string;
   mission: string;
 };
 

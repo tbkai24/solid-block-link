@@ -235,6 +235,25 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.4;
 }
 
+.about-block + .about-block {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.about-block h2 {
+  margin: 0 0 10px;
+  font-family: "Cinzel", Georgia, serif;
+  color: var(--brand);
+  font-size: 1.15rem;
+}
+
+.about-block p {
+  margin: 0;
+  max-width: 70ch;
+  line-height: 1.85;
+}
+
 .subtab-row {
   display: flex;
   gap: 12px;

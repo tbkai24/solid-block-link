@@ -7,8 +7,11 @@ export type SiteSettingsRow = {
   lookup_cta_url: string;
   logo_url: string;
   about_title: string;
+  about_intro_title: string;
   about_intro: string;
+  about_story_title: string;
   about_story: string;
+  about_mission_title: string;
   about_mission: string;
   milestone_title: string;
   milestone_description: string;

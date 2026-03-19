@@ -81,12 +81,28 @@ export function AdminSiteSettingsPanel() {
         <p className="muted-text">Uses Supabase Storage bucket: <strong>sbl-assets</strong></p>
         {form.logoUrl ? <img className="admin-logo-preview" src={form.logoUrl} alt="Logo preview" /> : null}
         <label>
+          <span>About Title</span>
+          <input value={form.aboutTitle} onChange={(e) => updateField("aboutTitle", e.target.value)} placeholder="About Solid Block Link" disabled={loading} />
+        </label>
+        <label>
+          <span>About Intro Title</span>
+          <input value={form.aboutIntroTitle} onChange={(e) => updateField("aboutIntroTitle", e.target.value)} placeholder="Introduction" disabled={loading} />
+        </label>
+        <label>
           <span>About Intro</span>
           <textarea value={form.aboutIntro} onChange={(e) => updateField("aboutIntro", e.target.value)} placeholder="Short introduction for the About page." disabled={loading} />
         </label>
         <label>
+          <span>About Story Title</span>
+          <input value={form.aboutStoryTitle} onChange={(e) => updateField("aboutStoryTitle", e.target.value)} placeholder="Story" disabled={loading} />
+        </label>
+        <label>
           <span>About Story</span>
           <textarea value={form.aboutStory} onChange={(e) => updateField("aboutStory", e.target.value)} placeholder="Tell the Solid Block Link story here." disabled={loading} />
+        </label>
+        <label>
+          <span>About Mission Title</span>
+          <input value={form.aboutMissionTitle} onChange={(e) => updateField("aboutMissionTitle", e.target.value)} placeholder="Mission" disabled={loading} />
         </label>
         <label>
           <span>About Mission</span>

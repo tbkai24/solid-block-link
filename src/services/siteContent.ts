@@ -52,8 +52,11 @@ function toSettingsPartial(settings: SiteSettingsRow, totalRaised: number): Part
     lookupCta: { label: settings.lookup_cta_label, href: settings.lookup_cta_url },
     about: {
       title: settings.about_title,
+      introTitle: settings.about_intro_title,
       intro: settings.about_intro,
+      storyTitle: settings.about_story_title,
       story: settings.about_story,
+      missionTitle: settings.about_mission_title,
       mission: settings.about_mission
     },
     footer: {
@@ -111,8 +114,11 @@ function toContent(
     lookupCta: { label: settings.lookup_cta_label, href: settings.lookup_cta_url },
     about: {
       title: settings.about_title,
+      introTitle: settings.about_intro_title,
       intro: settings.about_intro,
+      storyTitle: settings.about_story_title,
       story: settings.about_story,
+      missionTitle: settings.about_mission_title,
       mission: settings.about_mission
     },
     milestone: toMilestone(settings, progress.totalRaised),
