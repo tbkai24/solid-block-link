@@ -8,15 +8,36 @@ export function AboutPage() {
     { title: content.about.missionTitle, body: content.about.mission }
   ].filter((section) => section.title || section.body);
 
+  const leadSection = sections[0];
+  const supportingSections = sections.slice(1);
+
   return (
-    <section className="page-panel">
-      <h1>{content.about.title}</h1>
-      {sections.map((section) => (
-        <div key={section.title || section.body} className="about-block">
-          {section.title ? <h2>{section.title}</h2> : null}
-          {section.body ? <p>{section.body}</p> : null}
+    <section className="page-shell">
+      <div className="page-panel page-hero-panel about-hero-panel">
+        <p className="eyebrow">About</p>
+        <div className="about-hero-grid">
+          <div className="about-hero-copy">
+            <h1>{content.about.title}</h1>
+            {leadSection?.title ? <p className="about-lead-title">{leadSection.title}</p> : null}
+            {leadSection?.body ? <p className="page-lead">{leadSection.body}</p> : null}
+          </div>
+          <div className="about-hero-note">
+            <span className="chip">Fan-powered</span>
+            <strong>Strategy, visibility, and collective action for SB19&apos;s global momentum.</strong>
+          </div>
         </div>
-      ))}
+      </div>
+
+      {supportingSections.length ? (
+        <div className="about-grid">
+          {supportingSections.map((section) => (
+            <article key={section.title || section.body} className="page-panel about-card">
+              {section.title ? <h2>{section.title}</h2> : null}
+              {section.body ? <p>{section.body}</p> : null}
+            </article>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
