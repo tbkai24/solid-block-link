@@ -8,6 +8,10 @@ const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
+function normalizeLookupLabel(value?: string | null) {
+  return value === "SBL Lookup" ? "SBL Donation Lookup" : (value ?? "SBL Donation Lookup");
+}
+
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -35,7 +39,7 @@ function createEmptyContent() {
     heroTitle: "",
     heroSummary: "",
     donateCta: { label: "Donate Now", href: "#" },
-    lookupCta: { label: "SBL Lookup", href: "#" },
+    lookupCta: { label: "SBL Donation Lookup", href: "#" },
     about: {
       title: "",
       introTitle: "",
@@ -156,7 +160,7 @@ export default async function handler(_req: any, res: any) {
         href: settings?.donate_cta_url ?? "#"
       },
       lookupCta: {
-        label: settings?.lookup_cta_label ?? "SBL Lookup",
+        label: normalizeLookupLabel(settings?.lookup_cta_label),
         href: settings?.lookup_cta_url ?? "#"
       },
       about: {

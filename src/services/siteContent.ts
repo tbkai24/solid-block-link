@@ -10,6 +10,10 @@ type SummaryInput = {
   donorCount: number;
 } | null;
 
+function normalizeLookupLabel(value?: string | null) {
+  return value === "SBL Lookup" ? "SBL Donation Lookup" : (value ?? "SBL Donation Lookup");
+}
+
 function withSummaryFallback(summary: SummaryInput): SiteContent {
   const publicRaised = summary?.totalDonations ?? 0;
   const donorCount = summary?.donorCount ?? 0;
@@ -49,7 +53,7 @@ function toSettingsPartial(settings: SiteSettingsRow, totalRaised: number): Part
     heroTitle: settings.hero_title,
     heroSummary: settings.hero_summary,
     donateCta: { label: settings.donate_cta_label, href: settings.donate_cta_url },
-    lookupCta: { label: settings.lookup_cta_label, href: settings.lookup_cta_url },
+    lookupCta: { label: normalizeLookupLabel(settings.lookup_cta_label), href: settings.lookup_cta_url },
     about: {
       title: settings.about_title,
       introTitle: settings.about_intro_title,
@@ -113,7 +117,7 @@ function toContent(
     heroTitle: settings.hero_title,
     heroSummary: settings.hero_summary,
     donateCta: { label: settings.donate_cta_label, href: settings.donate_cta_url },
-    lookupCta: { label: settings.lookup_cta_label, href: settings.lookup_cta_url },
+    lookupCta: { label: normalizeLookupLabel(settings.lookup_cta_label), href: settings.lookup_cta_url },
     about: {
       title: settings.about_title,
       introTitle: settings.about_intro_title,

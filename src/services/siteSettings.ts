@@ -5,13 +5,17 @@ import { SiteSettingsRow } from "../types/supabase";
 const SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
 const BUCKET = "sbl-assets";
 
+function normalizeLookupLabel(value?: string | null) {
+  return value === "SBL Lookup" ? "SBL Donation Lookup" : (value ?? "SBL Donation Lookup");
+}
+
 export function toSiteSettingsForm(row?: SiteSettingsRow | null): SiteSettingsFormData {
   return {
     heroTitle: row?.hero_title ?? "",
     heroSummary: row?.hero_summary ?? "",
     donateCtaLabel: row?.donate_cta_label ?? "Donate Now",
     donateCtaUrl: row?.donate_cta_url ?? "",
-    lookupCtaLabel: row?.lookup_cta_label ?? "SBL Lookup",
+    lookupCtaLabel: normalizeLookupLabel(row?.lookup_cta_label),
     lookupCtaUrl: row?.lookup_cta_url ?? "/lookup",
     logoUrl: row?.logo_url ?? "",
     aboutTitle: row?.about_title ?? "About Solid Block Link",
@@ -42,7 +46,7 @@ export async function saveSiteSettings(values: SiteSettingsFormData) {
     hero_summary: values.heroSummary,
     donate_cta_label: values.donateCtaLabel,
     donate_cta_url: values.donateCtaUrl,
-    lookup_cta_label: values.lookupCtaLabel,
+    lookup_cta_label: normalizeLookupLabel(values.lookupCtaLabel),
     lookup_cta_url: values.lookupCtaUrl,
     logo_url: values.logoUrl,
     about_title: values.aboutTitle,
