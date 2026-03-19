@@ -105,7 +105,7 @@ function toProgress(campaign: any, summary: any) {
     goal,
     internalRaised,
     percent,
-    lastUpdated: campaign?.last_updated ? new Date(campaign.last_updated).toLocaleString() : ""
+    lastUpdated: campaign?.last_updated ?? ""
   };
 }
 
@@ -127,7 +127,7 @@ export default async function handler(_req: any, res: any) {
           totalRaised: publicRaised,
           publicRaised,
           donorCount,
-          lastUpdated: summary ? new Date().toLocaleString() : ""
+          lastUpdated: summary ? new Date().toISOString() : ""
         }
       });
     }

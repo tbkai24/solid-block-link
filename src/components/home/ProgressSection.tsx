@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { FiArrowRight, FiDollarSign, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
-import { formatCurrency } from "../../services/format";
+import { formatCurrency, formatViewerDateTime } from "../../services/format";
 import { CtaLink, MilestoneContent, ProgressStats } from "../../types/content";
 import { SectionHeading } from "../shared/SectionHeading";
 
@@ -11,6 +12,12 @@ type ProgressSectionProps = {
 };
 
 export function ProgressSection({ progress, donateCta, campaignTitle, milestone }: ProgressSectionProps) {
+  const [lastUpdatedLabel, setLastUpdatedLabel] = useState(() => formatViewerDateTime(new Date()));
+
+  useEffect(() => {
+    setLastUpdatedLabel(formatViewerDateTime(new Date()));
+  }, [progress.totalRaised, progress.publicRaised, progress.internalRaised, progress.donorCount, progress.goal, progress.percent]);
+
   const stats = [
     { label: "Goal", value: formatCurrency(progress.goal), icon: <FiTarget /> },
     { label: "Donors", value: progress.donorCount.toString(), icon: <FiUsers /> },
@@ -50,7 +57,7 @@ export function ProgressSection({ progress, donateCta, campaignTitle, milestone 
           <div className="trust-row">
             <span className="trust-chip">Verified sheet totals</span>
             <span className="trust-chip">Internal support included</span>
-            <span className="trust-chip">Last updated {progress.lastUpdated}</span>
+            <span className="trust-chip">Last updated {lastUpdatedLabel}</span>
           </div>
         </div>
       </div>

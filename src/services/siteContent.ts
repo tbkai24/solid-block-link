@@ -21,7 +21,7 @@ function withSummaryFallback(summary: SummaryInput): SiteContent {
       totalRaised: publicRaised,
       publicRaised,
       donorCount,
-      lastUpdated: summary ? new Date().toLocaleString() : fallbackContent.progress.lastUpdated
+      lastUpdated: summary ? new Date().toISOString() : fallbackContent.progress.lastUpdated
     }
   };
 }
@@ -80,7 +80,7 @@ function toProgress(campaign: CampaignRow, summary: SummaryInput) {
     goal: campaign.goal_amount,
     internalRaised: campaign.internal_amount,
     percent,
-    lastUpdated: new Date(campaign.last_updated).toLocaleString()
+    lastUpdated: campaign.last_updated
   };
 }
 
