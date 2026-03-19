@@ -1,27 +1,71 @@
 # Solid Block Link
 
-Main website for Solid Block Link, a donation and marketing platform focused on helping promote SB19 worldwide.
+Solid Block Link is a fan-driven donation and marketing platform built to support SB19 campaign pushes with a more polished public site and a lightweight admin workspace.
 
-## Goals
+## What It Includes
 
-- Highlight the current campaign
-- Show live donation progress
-- Publish curated updates
-- Archive past campaigns
-- Provide an admin-ready content model
+- public homepage with live donation progress
+- campaign and updates pages
+- admin panel for site settings, milestone, internal donations, and social updates
+- Supabase-backed content and settings
+- Apps Script summary support for public donation totals
 
-## Commands
+## Tech Stack
+
+- React
+- TypeScript
+- Vite
+- React Router
+- Supabase
+
+## Local Setup
+
+1. Install dependencies
 
 ```bash
 npm install
+```
+
+2. Copy the environment template
+
+```bash
+cp .env.example .env
+```
+
+3. Fill in your real values in `.env`
+
+```env
+VITE_APPS_SCRIPT_URL=
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+4. Start the dev server
+
+```bash
 npm run dev
+```
+
+## Build
+
+```bash
 npm run build
 ```
 
-## Notes
+## Environment Notes
 
-- `SBL Donation Lookup` remains a separate project.
-- Homepage CTAs include `Donate Now` and `SBL Lookup`.
-- Admin-managed values should later replace mock content.
-- Supabase is the planned database for campaigns, updates, embeds, and admin-managed settings.
-- CTA URLs should come from `site_settings`, not from `.env`.
+- `.env` is ignored by Git
+- use `.env.example` as the shared template
+- `SBL Donation Lookup` is a separate deployed app and should be linked through site settings CTA URLs
+
+## Supabase Notes
+
+- campaign content and admin-managed text come from Supabase
+- logo upload uses the `sbl-assets` storage bucket
+- public donation totals are merged from the Apps Script summary endpoint
+
+## Project Notes
+
+- homepage CTAs should be managed in `site_settings`
+- featured social updates are homepage-only highlights
+- latest updates and past campaigns are separated on the updates page
