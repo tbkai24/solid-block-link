@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FiArrowRight, FiDollarSign, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
-import { formatCurrency, formatViewerDateTime } from "../../services/format";
+import { formatCurrency, formatPercentage, formatViewerDateTime } from "../../services/format";
 import { CtaLink, MilestoneContent, ProgressStats } from "../../types/content";
 import { SectionHeading } from "../shared/SectionHeading";
 
@@ -49,7 +49,7 @@ export function ProgressSection({ progress, donateCta, campaignTitle, milestone 
         <div className="donation-summary">
           <div className="progress-copy">
             <span className="label">Progress</span>
-            <strong>{progress.percent}%</strong>
+            <strong>{formatPercentage(progress.percent)}%</strong>
           </div>
           <div className="progress-bar" aria-label="Donation progress">
             <span style={{ width: `${progress.percent}%` }} />

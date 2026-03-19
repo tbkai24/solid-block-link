@@ -71,7 +71,9 @@ function toProgress(campaign: CampaignRow, summary: SummaryInput) {
   const publicRaised = summary?.totalDonations ?? campaign.public_amount;
   const donorCount = summary?.donorCount ?? campaign.donor_count;
   const totalRaised = publicRaised + campaign.internal_amount;
-  const percent = campaign.goal_amount > 0 ? Math.min(Math.round((totalRaised / campaign.goal_amount) * 100), 100) : 0;
+  const percent = campaign.goal_amount > 0
+    ? Math.min(Math.round(((totalRaised / campaign.goal_amount) * 100) * 100) / 100, 100)
+    : 0;
 
   return {
     totalRaised,

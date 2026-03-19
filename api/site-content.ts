@@ -96,7 +96,9 @@ function toProgress(campaign: any, summary: any) {
   const internalRaised = campaign?.internal_amount ?? 0;
   const goal = campaign?.goal_amount ?? 0;
   const totalRaised = publicRaised + internalRaised;
-  const percent = goal > 0 ? Math.min(Math.round((totalRaised / goal) * 100), 100) : 0;
+  const percent = goal > 0
+    ? Math.min(Math.round(((totalRaised / goal) * 100) * 100) / 100, 100)
+    : 0;
 
   return {
     totalRaised,
