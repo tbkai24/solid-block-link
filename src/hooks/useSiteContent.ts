@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
-import { siteContent as fallbackContent } from "../data/mockContent";
-import { getSiteContent } from "../services/siteContent";
+import { getPublicSiteContent } from "../services/publicSiteContent";
 import { SiteContent } from "../types/content";
 
 const CACHE_KEY = "sbl-site-content-cache";
+const CACHE_VERSION = 1;
+const CACHE_TTL_MS = 15 * 1000;
+
+type CacheEnvelope = {
+  version: number;
+  savedAt: string;
+  content: SiteContent;
+};
 
 type UseSiteContentState = {
   content: SiteContent;
@@ -11,65 +18,174 @@ type UseSiteContentState = {
   error: string;
 };
 
-function readCachedContent(): SiteContent | null {
+const emptyContent: SiteContent = {
+  logoUrl: "",
+  heroTitle: "",
+  heroSummary: "",
+  donateCta: { label: "Donate Now", href: "#" },
+  lookupCta: { label: "SBL Lookup", href: "#" },
+  about: {
+    title: "",
+    introTitle: "",
+    intro: "",
+    storyTitle: "",
+    story: "",
+    missionTitle: "",
+    mission: ""
+  },
+  footer: {
+    title: "",
+    summary: ""
+  },
+  milestone: {
+    title: "",
+    nextAmount: 0,
+    isVisible: false
+  },
+  currentCampaign: {
+    id: "",
+    title: "",
+    status: "Active",
+    summary: "",
+    outcome: ""
+  },
+  progress: {
+    totalRaised: 0,
+    publicRaised: 0,
+    donorCount: 0,
+    goal: 0,
+    internalRaised: 0,
+    percent: 0,
+    lastUpdated: ""
+  },
+  updates: [],
+  embeds: [],
+  pastCampaigns: []
+};
+
+function readCacheEnvelope(): CacheEnvelope | null {
   if (typeof window === "undefined") return null;
+
   try {
     const raw = window.localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as SiteContent;
+
+    const parsed = JSON.parse(raw) as CacheEnvelope;
+    if (!parsed || parsed.version !== CACHE_VERSION || !parsed.content) {
+      return null;
+    }
+
+    return parsed;
   } catch {
     return null;
   }
 }
 
-function writeCachedContent(content: SiteContent) {
+function writeCacheEnvelope(content: SiteContent) {
   if (typeof window === "undefined") return;
+
+  const payload: CacheEnvelope = {
+    version: CACHE_VERSION,
+    savedAt: new Date().toISOString(),
+    content
+  };
+
   try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(content));
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
   } catch {
     // Ignore storage failures and keep the live app working.
   }
 }
 
+function isCacheStale(envelope: CacheEnvelope | null) {
+  if (!envelope?.savedAt) return true;
+
+  const savedAt = new Date(envelope.savedAt).getTime();
+  if (Number.isNaN(savedAt)) return true;
+
+  return Date.now() - savedAt > CACHE_TTL_MS;
+}
+
+const cachedEnvelope = readCacheEnvelope();
+
+let sharedState: UseSiteContentState = {
+  content: cachedEnvelope?.content ?? emptyContent,
+  loading: !cachedEnvelope,
+  error: ""
+};
+
+let inflightRequest: Promise<void> | null = null;
+let refreshLoopStarted = false;
+const listeners = new Set<(state: UseSiteContentState) => void>();
+
+function emit() {
+  listeners.forEach((listener) => listener(sharedState));
+}
+
+async function refreshSiteContent() {
+  if (inflightRequest) return inflightRequest;
+
+  inflightRequest = (async () => {
+    try {
+      const nextContent = await getPublicSiteContent();
+      sharedState = {
+        content: nextContent,
+        loading: false,
+        error: ""
+      };
+      writeCacheEnvelope(nextContent);
+    } catch (error) {
+      sharedState = {
+        ...sharedState,
+        loading: false,
+        error: error instanceof Error ? error.message : "Unable to load site content."
+      };
+    } finally {
+      inflightRequest = null;
+      emit();
+    }
+  })();
+
+  return inflightRequest;
+}
+
+function startRefreshLoop() {
+  if (refreshLoopStarted || typeof window === "undefined") return;
+  refreshLoopStarted = true;
+
+  const refresh = () => {
+    const nextEnvelope = readCacheEnvelope();
+
+    if (isCacheStale(nextEnvelope)) {
+      void refreshSiteContent();
+    }
+  };
+
+  window.setInterval(refresh, CACHE_TTL_MS);
+  window.addEventListener("focus", refresh);
+}
+
 export function useSiteContent(): UseSiteContentState {
-  const cachedContent = readCachedContent();
-  const [content, setContent] = useState<SiteContent>(cachedContent ?? fallbackContent);
-  const [loading, setLoading] = useState(!cachedContent);
-  const [error, setError] = useState("");
+  const [state, setState] = useState<UseSiteContentState>(sharedState);
 
   useEffect(() => {
-    let active = true;
+    listeners.add(setState);
+    startRefreshLoop();
 
-    async function load() {
-      try {
-        const nextContent = await getSiteContent();
-        if (!active) return;
-        setContent(nextContent);
-        writeCachedContent(nextContent);
-        setError("");
-      } catch (err) {
-        if (!active) return;
-        const message = err instanceof Error ? err.message : "Unable to load site content.";
-        setError(message);
-      } finally {
-        if (active) setLoading(false);
-      }
+    if (isCacheStale(readCacheEnvelope())) {
+      void refreshSiteContent();
+    } else {
+      sharedState = {
+        ...sharedState,
+        loading: false
+      };
+      emit();
     }
 
-    const refresh = () => {
-      void load();
-    };
-
-    void load();
-    const interval = window.setInterval(refresh, 15000);
-    window.addEventListener("focus", refresh);
-
     return () => {
-      active = false;
-      window.clearInterval(interval);
-      window.removeEventListener("focus", refresh);
+      listeners.delete(setState);
     };
   }, []);
 
-  return { content, loading, error };
+  return state;
 }
