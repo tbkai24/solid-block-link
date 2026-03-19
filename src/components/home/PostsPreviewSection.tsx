@@ -1,6 +1,10 @@
+import { useState } from "react";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { EmbedItem, UpdateItem } from "../../types/content";
 import { SocialEmbedCard } from "../shared/SocialEmbedCard";
 import { SectionHeading } from "../shared/SectionHeading";
+
+const FEATURED_PAGE_SIZE = 2;
 
 type PostsPreviewSectionProps = {
   updates: UpdateItem[];
@@ -10,6 +14,23 @@ type PostsPreviewSectionProps = {
 export function PostsPreviewSection({ updates, embeds }: PostsPreviewSectionProps) {
   const featuredUpdates = updates.filter((item) => item.featured);
   const hasFeaturedUpdates = featuredUpdates.length > 0;
+  const [activePage, setActivePage] = useState(0);
+  const items = hasFeaturedUpdates ? featuredUpdates : embeds;
+  const pageCount = Math.max(1, Math.ceil(items.length / FEATURED_PAGE_SIZE));
+  const visibleFeatured = featuredUpdates.slice(activePage * FEATURED_PAGE_SIZE, activePage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE);
+  const visibleEmbeds = embeds.slice(activePage * FEATURED_PAGE_SIZE, activePage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE);
+
+  function move(direction: "prev" | "next") {
+    if (pageCount <= 1) return;
+
+    setActivePage((current) => {
+      if (direction === "prev") {
+        return current === 0 ? pageCount - 1 : current - 1;
+      }
+
+      return current === pageCount - 1 ? 0 : current + 1;
+    });
+  }
 
   return (
     <section className="content-section">
@@ -18,10 +39,26 @@ export function PostsPreviewSection({ updates, embeds }: PostsPreviewSectionProp
         title="Campaign highlights"
         copy="Featured posts are presented like a curated news feed so supporters can immediately spot the strongest updates."
       />
+      <div className="updates-slider-head">
+        <div>
+          <p className="muted-text">Use the controls to browse one featured highlight at a time.</p>
+        </div>
+        {pageCount > 1 ? (
+          <div className="updates-slider-controls">
+            <button type="button" className="subtab-button" onClick={() => move("prev")} aria-label="Previous featured post">
+              <FiChevronLeft />
+            </button>
+            <span className="label">{activePage + 1} / {pageCount}</span>
+            <button type="button" className="subtab-button" onClick={() => move("next")} aria-label="Next featured post">
+              <FiChevronRight />
+            </button>
+          </div>
+        ) : null}
+      </div>
       <div className="card-grid post-preview-grid">
         {hasFeaturedUpdates
-          ? featuredUpdates.map((item) => <SocialEmbedCard item={item} key={item.id} />)
-          : embeds.map((item) => (
+          ? visibleFeatured.map((item) => <SocialEmbedCard item={item} key={item.id} />)
+          : visibleEmbeds.map((item) => (
               <article className="embed-card post-preview-card" key={item.id}>
                 <div className="post-preview-meta">
                   <span className="chip">{item.platform}</span>
@@ -30,6 +67,7 @@ export function PostsPreviewSection({ updates, embeds }: PostsPreviewSectionProp
                 <p>{item.embedNote}</p>
               </article>
             ))}
+        {!items.length ? <p className="muted-text">No featured posts yet.</p> : null}
       </div>
     </section>
   );
