@@ -6,7 +6,7 @@ export const siteContent: SiteContent = {
   heroSummary:
     "Solid Block Link brings together donation drives, campaign visibility, and curated updates that help promote SB19 worldwide.",
   donateCta: { label: "Donate Now", href: "#" },
-  lookupCta: { label: "SBL Lookup", href: "#" },
+  lookupCta: { label: "SBL Donation Lookup", href: "#" },
   about: {
     title: "About Solid Block Link",
     introTitle: "Introduction",

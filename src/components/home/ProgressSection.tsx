@@ -13,6 +13,7 @@ type ProgressSectionProps = {
 
 export function ProgressSection({ progress, donateCta, campaignTitle, milestone }: ProgressSectionProps) {
   const [lastUpdatedLabel, setLastUpdatedLabel] = useState(() => formatViewerDateTime(new Date()));
+  const amountNeeded = Math.max(progress.goal - progress.totalRaised, 0);
 
   useEffect(() => {
     setLastUpdatedLabel(formatViewerDateTime(new Date()));
@@ -48,8 +49,13 @@ export function ProgressSection({ progress, donateCta, campaignTitle, milestone 
         </div>
         <div className="donation-summary">
           <div className="progress-copy">
-            <span className="label">Progress</span>
-            <strong>{formatPercentage(progress.percent)}%</strong>
+            <div className="progress-metric progress-side-value">
+              <span className="progress-amount-needed">{formatCurrency(amountNeeded)} needed</span>
+            </div>
+            <div className="progress-metric">
+              <span className="label">Progress</span>
+              <strong>{formatPercentage(progress.percent)}%</strong>
+            </div>
           </div>
           <div className="progress-bar" aria-label="Donation progress">
             <span style={{ width: `${progress.percent}%` }} />

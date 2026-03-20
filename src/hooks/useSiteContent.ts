@@ -23,7 +23,7 @@ const emptyContent: SiteContent = {
   heroTitle: "",
   heroSummary: "",
   donateCta: { label: "Donate Now", href: "#" },
-  lookupCta: { label: "SBL Lookup", href: "#" },
+  lookupCta: { label: "SBL Donation Lookup", href: "#" },
   about: {
     title: "",
     introTitle: "",
