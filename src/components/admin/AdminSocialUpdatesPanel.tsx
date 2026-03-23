@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAdminAlert } from "../../hooks/useAdminAlert";
+import { invalidateSiteContentCache } from "../../services/siteContentCache";
 import { detectPlatformFromUrl, suggestUpdateSummary, suggestUpdateTitle } from "../../services/updateSuggestions";
 import { UpdateRow } from "../../types/supabase";
 import { socialLinks } from "../../config/socials";
@@ -83,6 +84,7 @@ export function AdminSocialUpdatesPanel() {
         ? current.map((item) => (item.id === editingId ? data : item))
         : [data, ...current].slice(0, 8)
     );
+    invalidateSiteContentCache();
     setForm(emptyForm);
     setEditingId("");
     showAlert("success", editingId ? "Update saved." : "Update added.");
@@ -128,6 +130,7 @@ export function AdminSocialUpdatesPanel() {
       setEditingId("");
       setForm(emptyForm);
     }
+    invalidateSiteContentCache();
     showAlert("success", "Update removed.");
   }
 
@@ -144,25 +147,25 @@ export function AdminSocialUpdatesPanel() {
             value={form.title}
             onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))}
             placeholder="Optional if URL is provided"
-            disabled={loading || saving}
+            disabled={saving}
           />
         </label>
         <p className="muted-text">Suggested title: <strong>{suggestedTitle}</strong></p>
         <label>
           <span>Short Summary</span>
-          <textarea value={form.summary} onChange={(e) => setForm((current) => ({ ...current, summary: e.target.value }))} placeholder="Optional if suggestion is enough" disabled={loading || saving} />
+          <textarea value={form.summary} onChange={(e) => setForm((current) => ({ ...current, summary: e.target.value }))} placeholder="Optional if suggestion is enough" disabled={saving} />
         </label>
         <p className="muted-text">Suggested summary: <strong>{suggestedSummary}</strong></p>
         <label>
           <span>Label</span>
-          <select value={form.label} onChange={(e) => setForm((current) => ({ ...current, label: e.target.value }))} disabled={loading || saving}>
+          <select value={form.label} onChange={(e) => setForm((current) => ({ ...current, label: e.target.value }))} disabled={saving}>
             <option value="Latest Update">Latest Update</option>
             <option value="Past Campaign">Past Campaign</option>
           </select>
         </label>
         <label>
           <span>Platform</span>
-          <select value={form.platform} onChange={(e) => setForm((current) => ({ ...current, platform: e.target.value }))} disabled={loading || saving}>
+          <select value={form.platform} onChange={(e) => setForm((current) => ({ ...current, platform: e.target.value }))} disabled={saving}>
             {socialLinks.map((item) => (
               <option key={item.label} value={item.label}>
                 {item.label}
@@ -172,22 +175,22 @@ export function AdminSocialUpdatesPanel() {
         </label>
         <label>
           <span>URL</span>
-          <input value={form.href} onChange={(e) => handleUrlChange(e.target.value)} placeholder="https://..." disabled={loading || saving} />
+          <input value={form.href} onChange={(e) => handleUrlChange(e.target.value)} placeholder="https://..." disabled={saving} />
         </label>
         <label>
           <span>Published Date</span>
-          <input type="date" value={form.publishedAt} onChange={(e) => setForm((current) => ({ ...current, publishedAt: e.target.value }))} disabled={loading || saving} />
+          <input type="date" value={form.publishedAt} onChange={(e) => setForm((current) => ({ ...current, publishedAt: e.target.value }))} disabled={saving} />
         </label>
         <label className="admin-checkbox">
           <input
             type="checkbox"
             checked={form.featured}
             onChange={(e) => setForm((current) => ({ ...current, featured: e.target.checked }))}
-            disabled={loading || saving}
+            disabled={saving}
           />
           <span>Featured on homepage</span>
         </label>
-        <button className="lookup-button" type="submit" disabled={loading || saving}>
+        <button className="lookup-button" type="submit" disabled={saving}>
           {saving ? "Saving..." : editingId ? "Update Entry" : "Add Update"}
         </button>
         {editingId ? (

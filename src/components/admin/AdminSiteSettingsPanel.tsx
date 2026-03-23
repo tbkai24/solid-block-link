@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useAdminAlert } from "../../hooks/useAdminAlert";
+import { invalidateSiteContentCache } from "../../services/siteContentCache";
 import { fetchSiteSettings, saveSiteSettings, toSiteSettingsForm, uploadSiteLogo } from "../../services/siteSettings";
 import { SiteSettingsFormData } from "../../types/siteSettings";
 
@@ -44,6 +45,7 @@ export function AdminSiteSettingsPanel() {
     setSaving(true);
     try {
       await saveSiteSettings(form);
+      invalidateSiteContentCache();
       showAlert("success", "Site settings saved.");
     } catch (error) {
       showAlert("danger", error instanceof Error ? error.message : "Save failed.");
@@ -60,58 +62,60 @@ export function AdminSiteSettingsPanel() {
       <form className="admin-settings-form" onSubmit={handleSubmit}>
         <label>
           <span>Hero Title</span>
-          <input value={form.heroTitle} onChange={(e) => updateField("heroTitle", e.target.value)} placeholder="Power the Global Rise of SB19" disabled={loading} />
+          <input value={form.heroTitle} onChange={(e) => updateField("heroTitle", e.target.value)} placeholder="Power the Global Rise of SB19" disabled={saving} />
         </label>
         <label>
           <span>Hero Summary</span>
-          <textarea value={form.heroSummary} onChange={(e) => updateField("heroSummary", e.target.value)} placeholder="Short supporting copy for the homepage hero section." disabled={loading} />
+          <textarea value={form.heroSummary} onChange={(e) => updateField("heroSummary", e.target.value)} placeholder="Short supporting copy for the homepage hero section." disabled={saving} />
         </label>
         <label>
           <span>Donate CTA URL</span>
-          <input value={form.donateCtaUrl} onChange={(e) => updateField("donateCtaUrl", e.target.value)} placeholder="https://your-donate-link.com" disabled={loading} />
+          <input value={form.donateCtaUrl} onChange={(e) => updateField("donateCtaUrl", e.target.value)} placeholder="https://your-donate-link.com" disabled={saving} />
         </label>
         <label>
           <span>Lookup CTA URL</span>
-          <input value={form.lookupCtaUrl} onChange={(e) => updateField("lookupCtaUrl", e.target.value)} placeholder="https://sbl-donation-lookup.vercel.app/" disabled={loading} />
+          <input value={form.lookupCtaUrl} onChange={(e) => updateField("lookupCtaUrl", e.target.value)} placeholder="https://sbl-donation-lookup.vercel.app/" disabled={saving} />
         </label>
         <label>
           <span>Logo Upload</span>
-          <input type="file" accept="image/*" onChange={handleUpload} disabled={loading || uploading} />
+          <input type="file" accept="image/*" onChange={handleUpload} disabled={saving || uploading} />
         </label>
         <p className="muted-text">Uses Supabase Storage bucket: <strong>sbl-assets</strong></p>
         {form.logoUrl ? <img className="admin-logo-preview" src={form.logoUrl} alt="Logo preview" /> : null}
         <label>
           <span>About Title</span>
-          <input value={form.aboutTitle} onChange={(e) => updateField("aboutTitle", e.target.value)} placeholder="About Solid Block Link" disabled={loading} />
+          <input value={form.aboutTitle} onChange={(e) => updateField("aboutTitle", e.target.value)} placeholder="About Solid Block Link" disabled={saving} />
         </label>
         <label>
           <span>About Intro Title</span>
-          <input value={form.aboutIntroTitle} onChange={(e) => updateField("aboutIntroTitle", e.target.value)} placeholder="Introduction" disabled={loading} />
+          <input value={form.aboutIntroTitle} onChange={(e) => updateField("aboutIntroTitle", e.target.value)} placeholder="Introduction" disabled={saving} />
         </label>
         <label>
           <span>About Intro</span>
-          <textarea value={form.aboutIntro} onChange={(e) => updateField("aboutIntro", e.target.value)} placeholder="Short introduction for the About page." disabled={loading} />
+          <textarea value={form.aboutIntro} onChange={(e) => updateField("aboutIntro", e.target.value)} placeholder="Short introduction for the About page." disabled={saving} />
         </label>
         <label>
           <span>About Story Title</span>
-          <input value={form.aboutStoryTitle} onChange={(e) => updateField("aboutStoryTitle", e.target.value)} placeholder="Story" disabled={loading} />
+          <input value={form.aboutStoryTitle} onChange={(e) => updateField("aboutStoryTitle", e.target.value)} placeholder="Story" disabled={saving} />
         </label>
         <label>
           <span>About Story</span>
-          <textarea value={form.aboutStory} onChange={(e) => updateField("aboutStory", e.target.value)} placeholder="Tell the Solid Block Link story here." disabled={loading} />
+          <textarea value={form.aboutStory} onChange={(e) => updateField("aboutStory", e.target.value)} placeholder="Tell the Solid Block Link story here." disabled={saving} />
         </label>
         <label>
           <span>About Mission Title</span>
-          <input value={form.aboutMissionTitle} onChange={(e) => updateField("aboutMissionTitle", e.target.value)} placeholder="Mission" disabled={loading} />
+          <input value={form.aboutMissionTitle} onChange={(e) => updateField("aboutMissionTitle", e.target.value)} placeholder="Mission" disabled={saving} />
         </label>
         <label>
           <span>About Mission</span>
-          <textarea value={form.aboutMission} onChange={(e) => updateField("aboutMission", e.target.value)} placeholder="Describe the mission and purpose of the platform." disabled={loading} />
+          <textarea value={form.aboutMission} onChange={(e) => updateField("aboutMission", e.target.value)} placeholder="Describe the mission and purpose of the platform." disabled={saving} />
         </label>
-        <button className="lookup-button" type="submit" disabled={loading || saving || uploading}>
+        <button className="lookup-button" type="submit" disabled={saving || uploading}>
           {saving ? "Saving..." : "Save Settings"}
         </button>
       </form>
     </section>
   );
 }
+
+export default AdminSiteSettingsPanel;

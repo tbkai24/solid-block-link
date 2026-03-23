@@ -24,6 +24,34 @@ export const siteContent: SiteContent = {
     nextAmount: 0,
     isVisible: false
   },
+  campaignMilestones: [
+    {
+      id: "milestone-1",
+      title: "Milestone 1",
+      targetAmount: 650000,
+      rowStart: 2,
+      rowEnd: 100,
+      status: "Active",
+      displayOrder: 1,
+      raisedAmount: 388309,
+      donorCount: 92,
+      percent: 59.74,
+      note: "First funding bucket for the campaign launch window."
+    },
+    {
+      id: "milestone-2",
+      title: "Milestone 2",
+      targetAmount: 350000,
+      rowStart: 101,
+      rowEnd: 180,
+      status: "Active",
+      displayOrder: 2,
+      raisedAmount: 0,
+      donorCount: 0,
+      percent: 0,
+      note: "Second funding bucket that starts after the first row cutoff."
+    }
+  ],
   footer: {
     title: "Connect with Solid Block Link",
     summary: "Fan-powered marketing and donation campaigns helping promote SB19 worldwide."
@@ -40,6 +68,7 @@ export const siteContent: SiteContent = {
     totalRaised: 0,
     publicRaised: 0,
     donorCount: 0,
+    internalDonorCount: 0,
     goal: 0,
     internalRaised: 0,
     percent: 0,

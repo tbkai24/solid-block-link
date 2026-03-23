@@ -231,10 +231,15 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.8;
 }
 
-.page-grid {
-  display: grid;
-  grid-template-columns: 1.5fr 0.8fr;
-  gap: 18px;
+.page-grid { 
+  display: grid; 
+  grid-template-columns: 1.5fr 0.8fr; 
+  gap: 18px; 
+} 
+
+.not-found-panel {
+  max-width: 760px;
+  margin-inline: auto;
 }
 
 .campaign-feature-panel,
@@ -260,6 +265,100 @@ a { color: inherit; text-decoration: none; }
 .campaign-side-panel strong {
   font-size: 1.35rem;
   line-height: 1.4;
+}
+
+.campaign-milestones-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.campaign-milestones-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.campaign-milestone-card {
+  display: grid;
+  gap: 12px;
+  padding: 22px 24px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(203, 165, 106, 0.05), transparent 46%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.campaign-milestone-head, 
+.campaign-milestone-foot, 
+.campaign-milestone-metrics { 
+  display: flex; 
+  justify-content: space-between; 
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.campaign-milestone-card h3 {
+  margin: 0;
+  font-family: "Cinzel", Georgia, serif;
+  color: var(--brand);
+  font-size: clamp(1.2rem, 2vw, 1.5rem); 
+  line-height: 1.25; 
+} 
+
+.campaign-milestone-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.campaign-milestone-card strong {
+  display: block;
+  margin-top: 6px;
+  font-family: "Cinzel", Georgia, serif;
+  color: var(--text);
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+}
+
+.campaign-milestone-side {
+  text-align: right;
+}
+
+.campaign-milestone-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.milestone-history-empty {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 22px;
+  border: 1px dashed rgba(203, 165, 106, 0.3);
+  background:
+    linear-gradient(180deg, rgba(203, 165, 106, 0.04), transparent 46%),
+    rgba(255, 255, 255, 0.015);
+}
+
+.milestone-history-chip {
+  width: fit-content;
+}
+
+.milestone-history-empty strong {
+  font-family: "Cinzel", Georgia, serif;
+  font-size: clamp(1.35rem, 2.5vw, 1.9rem);
+  color: var(--brand);
+  line-height: 1.1;
+}
+
+.milestone-history-empty p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 60ch;
 }
 
 .about-hero-panel {
@@ -928,13 +1027,13 @@ a { color: inherit; text-decoration: none; }
 .lookup-error { background: rgba(160, 43, 43, 0.28); color: #ffd8d8; }
 .lookup-result { background: rgba(123, 224, 174, 0.16); }
 
-.admin-alert {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  line-height: 1.45;
-}
+.admin-alert { 
+  margin: 12px 0 16px; 
+  padding: 12px 14px; 
+  border-radius: 12px; 
+  border: 1px solid transparent; 
+  line-height: 1.45; 
+} 
 
 .admin-alert.success {
   background: rgba(25, 135, 84, 0.18);
@@ -1029,6 +1128,20 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 0;
 }
 
+.admin-milestone-subpanel {
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-milestone-subpanel h3 {
+  margin: 0;
+  font-family: "Cinzel", Georgia, serif;
+  color: var(--brand);
+}
+
 @media (max-width: 860px) {
   .hero-panel, .card-grid, .donation-hero-panel { grid-template-columns: 1fr; }
   .feature-card, .site-header .shell-row, .campaign-spotlight { flex-direction: column; align-items: flex-start; }
@@ -1036,7 +1149,9 @@ a { color: inherit; text-decoration: none; }
   .post-preview-grid,
   .pulse-grid,
   .about-hero-grid,
-  .about-grid { grid-template-columns: 1fr; }
+  .about-grid,
+  .campaign-milestones-grid,
+  .campaign-milestones-grid.compact { grid-template-columns: 1fr; }
   .site-header .shell-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;

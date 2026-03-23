@@ -2,7 +2,7 @@ import { supabase } from "../lib/supabase";
 import { SiteSettingsFormData } from "../types/siteSettings";
 import { SiteSettingsRow } from "../types/supabase";
 
-const SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
+export const SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
 const BUCKET = "sbl-assets";
 
 function normalizeLookupLabel(value?: string | null) {
@@ -56,6 +56,7 @@ export async function saveSiteSettings(values: SiteSettingsFormData) {
     about_story: values.aboutStory,
     about_mission_title: values.aboutMissionTitle,
     about_mission: values.aboutMission,
+    milestone_step_amount: Number(values.milestoneStepAmount || 0),
     footer_title: values.footerTitle,
     footer_summary: values.footerSummary
   };

@@ -7,6 +7,7 @@ export type ProgressStats = {
   totalRaised: number;
   publicRaised: number;
   donorCount: number;
+  internalDonorCount: number;
   goal: number;
   internalRaised: number;
   percent: number;
@@ -60,6 +61,20 @@ export type MilestoneContent = {
   isVisible: boolean;
 };
 
+export type CampaignMilestoneItem = {
+  id: string;
+  title: string;
+  targetAmount: number;
+  rowStart: number;
+  rowEnd: number;
+  status: "Active" | "Completed";
+  displayOrder: number;
+  raisedAmount: number;
+  donorCount: number;
+  percent: number;
+  note: string;
+};
+
 export type SiteContent = {
   logoUrl: string;
   heroTitle: string;
@@ -69,6 +84,7 @@ export type SiteContent = {
   about: AboutContent;
   footer: FooterContent;
   milestone: MilestoneContent;
+  campaignMilestones: CampaignMilestoneItem[];
   currentCampaign: CampaignItem;
   progress: ProgressStats;
   updates: UpdateItem[];

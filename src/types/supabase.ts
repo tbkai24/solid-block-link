@@ -36,6 +36,20 @@ export type CampaignRow = {
   is_past: boolean;
 };
 
+export type CampaignMilestoneRow = {
+  id: string;
+  campaign_id: string;
+  title: string;
+  target_amount: number;
+  row_start: number;
+  row_end: number;
+  status: "Active" | "Completed";
+  display_order: number;
+  note: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type UpdateRow = {
   id: string;
   title: string;
@@ -50,6 +64,7 @@ export type UpdateRow = {
 export type InternalAdjustmentRow = {
   id: string;
   campaign_id: string;
+  milestone_id?: string | null;
   name: string;
   amount: number;
   notes: string;

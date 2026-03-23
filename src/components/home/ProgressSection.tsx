@@ -13,17 +13,19 @@ type ProgressSectionProps = {
 
 export function ProgressSection({ progress, donateCta, campaignTitle, milestone }: ProgressSectionProps) {
   const [lastUpdatedLabel, setLastUpdatedLabel] = useState(() => formatViewerDateTime(new Date()));
+  const internalDonorCount = progress.internalDonorCount ?? 0;
+  const totalDonorCount = progress.donorCount + internalDonorCount;
   const amountNeeded = Math.max(progress.goal - progress.totalRaised, 0);
 
   useEffect(() => {
     setLastUpdatedLabel(formatViewerDateTime(new Date()));
-  }, [progress.totalRaised, progress.publicRaised, progress.internalRaised, progress.donorCount, progress.goal, progress.percent]);
+  }, [progress.totalRaised, progress.publicRaised, progress.internalRaised, progress.donorCount, internalDonorCount, progress.goal, progress.percent]);
 
   const stats = [
     { label: "Goal", value: formatCurrency(progress.goal), icon: <FiTarget /> },
-    { label: "Donors", value: progress.donorCount.toString(), icon: <FiUsers /> },
+    { label: "Donors", value: totalDonorCount.toString(), icon: <FiUsers /> },
     { label: "Public Donations", value: formatCurrency(progress.publicRaised), icon: <FiTrendingUp /> },
-    { label: "Internal Added", value: formatCurrency(progress.internalRaised), icon: <FiDollarSign /> }
+    { label: "Internal Donations", value: formatCurrency(progress.internalRaised), icon: <FiDollarSign /> }
   ];
 
   return (
@@ -79,3 +81,5 @@ export function ProgressSection({ progress, donateCta, campaignTitle, milestone 
     </section>
   );
 }
+
+export default ProgressSection;

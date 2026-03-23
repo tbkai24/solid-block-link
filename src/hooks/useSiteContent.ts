@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
 import { getPublicSiteContent } from "../services/publicSiteContent";
+import { getSiteContentRefreshEvent, getSiteContentRefreshKey } from "../services/siteContentCache";
 import { SiteContent } from "../types/content";
 
-const CACHE_KEY = "sbl-site-content-cache";
-const CACHE_VERSION = 1;
-const CACHE_TTL_MS = 15 * 1000;
-
-type CacheEnvelope = {
-  version: number;
-  savedAt: string;
-  content: SiteContent;
-};
+const CACHE_TTL_MS = 30 * 1000;
+const SITE_CONTENT_REFRESH_EVENT = getSiteContentRefreshEvent();
+const SITE_CONTENT_REFRESH_KEY = getSiteContentRefreshKey();
 
 type UseSiteContentState = {
   content: SiteContent;
@@ -42,6 +37,7 @@ const emptyContent: SiteContent = {
     nextAmount: 0,
     isVisible: false
   },
+  campaignMilestones: [],
   currentCampaign: {
     id: "",
     title: "",
@@ -53,6 +49,7 @@ const emptyContent: SiteContent = {
     totalRaised: 0,
     publicRaised: 0,
     donorCount: 0,
+    internalDonorCount: 0,
     goal: 0,
     internalRaised: 0,
     percent: 0,
@@ -63,54 +60,9 @@ const emptyContent: SiteContent = {
   pastCampaigns: []
 };
 
-function readCacheEnvelope(): CacheEnvelope | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const raw = window.localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as CacheEnvelope;
-    if (!parsed || parsed.version !== CACHE_VERSION || !parsed.content) {
-      return null;
-    }
-
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeCacheEnvelope(content: SiteContent) {
-  if (typeof window === "undefined") return;
-
-  const payload: CacheEnvelope = {
-    version: CACHE_VERSION,
-    savedAt: new Date().toISOString(),
-    content
-  };
-
-  try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
-  } catch {
-    // Ignore storage failures and keep the live app working.
-  }
-}
-
-function isCacheStale(envelope: CacheEnvelope | null) {
-  if (!envelope?.savedAt) return true;
-
-  const savedAt = new Date(envelope.savedAt).getTime();
-  if (Number.isNaN(savedAt)) return true;
-
-  return Date.now() - savedAt > CACHE_TTL_MS;
-}
-
-const cachedEnvelope = readCacheEnvelope();
-
 let sharedState: UseSiteContentState = {
-  content: cachedEnvelope?.content ?? emptyContent,
-  loading: !cachedEnvelope,
+  content: emptyContent,
+  loading: true,
   error: ""
 };
 
@@ -133,7 +85,6 @@ async function refreshSiteContent() {
         loading: false,
         error: ""
       };
-      writeCacheEnvelope(nextContent);
     } catch (error) {
       sharedState = {
         ...sharedState,
@@ -154,15 +105,17 @@ function startRefreshLoop() {
   refreshLoopStarted = true;
 
   const refresh = () => {
-    const nextEnvelope = readCacheEnvelope();
-
-    if (isCacheStale(nextEnvelope)) {
-      void refreshSiteContent();
-    }
+    void refreshSiteContent();
   };
 
   window.setInterval(refresh, CACHE_TTL_MS);
   window.addEventListener("focus", refresh);
+  window.addEventListener(SITE_CONTENT_REFRESH_EVENT, refresh);
+  window.addEventListener("storage", (event) => {
+    if (event.key === SITE_CONTENT_REFRESH_KEY) {
+      refresh();
+    }
+  });
 }
 
 export function useSiteContent(): UseSiteContentState {
@@ -171,16 +124,7 @@ export function useSiteContent(): UseSiteContentState {
   useEffect(() => {
     listeners.add(setState);
     startRefreshLoop();
-
-    if (isCacheStale(readCacheEnvelope())) {
-      void refreshSiteContent();
-    } else {
-      sharedState = {
-        ...sharedState,
-        loading: false
-      };
-      emit();
-    }
+    void refreshSiteContent();
 
     return () => {
       listeners.delete(setState);

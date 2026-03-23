@@ -1,14 +1,21 @@
 import { FiArrowUpRight, FiClock, FiTarget, FiTrendingUp } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "../../services/format";
-import { CampaignItem, ProgressStats, UpdateItem } from "../../types/content";
+import { CampaignItem, CampaignMilestoneItem, ProgressStats, UpdateItem } from "../../types/content";
 import { SectionHeading } from "../shared/SectionHeading";
 
 type CampaignPulseSectionProps = {
   campaign: CampaignItem;
+  milestones: CampaignMilestoneItem[];
   progress: ProgressStats;
   updates: UpdateItem[];
 };
+
+function getMilestoneState(item: CampaignMilestoneItem) {
+  const normalizedStatus = String(item.status ?? "").trim().toLowerCase();
+  if (item.targetAmount > 0 && item.raisedAmount >= item.targetAmount) return "Achieved";
+  return normalizedStatus === "completed" || normalizedStatus === "achieved" ? "Achieved" : "Ongoing";
+}
 
 function formatUpdateDate(value: string) {
   const date = new Date(value);
@@ -24,9 +31,23 @@ function formatUpdateDate(value: string) {
   });
 }
 
-export function CampaignPulseSection({ campaign, progress, updates }: CampaignPulseSectionProps) {
+export function CampaignPulseSection({ campaign, milestones, progress, updates }: CampaignPulseSectionProps) {
   const latestUpdate = updates.find((item) => item.label !== "Past Campaign") ?? updates[0];
+  const sortedMilestones = [...milestones].sort((left, right) => {
+    const leftState = getMilestoneState(left);
+    const rightState = getMilestoneState(right);
+
+    if (leftState !== rightState) {
+      return leftState === "Ongoing" ? -1 : 1;
+    }
+
+    return (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
+  });
+  const currentMilestone = sortedMilestones.find((item) => getMilestoneState(item) === "Ongoing") ?? sortedMilestones[0];
   const remaining = Math.max(progress.goal - progress.totalRaised, 0);
+  const milestoneRemaining = currentMilestone
+    ? Math.max(currentMilestone.targetAmount - currentMilestone.raisedAmount, 0)
+    : 0;
 
   return (
     <section className="content-section">
@@ -39,11 +60,13 @@ export function CampaignPulseSection({ campaign, progress, updates }: CampaignPu
         <Link className="pulse-card pulse-card-primary" to="/#donation-progress">
           <span className="pulse-icon" aria-hidden="true"><FiTrendingUp /></span>
           <p className="pulse-kicker">Live momentum</p>
-          <strong>{formatCurrency(progress.totalRaised)}</strong>
+          <strong>{currentMilestone ? currentMilestone.title : formatCurrency(progress.totalRaised)}</strong>
           <p className="pulse-copy">
-            {progress.goal > 0
-              ? `${formatCurrency(remaining)} remaining to reach the current goal.`
-              : "Track the live total and see how public and internal support are building together."}
+            {currentMilestone
+              ? `${formatCurrency(milestoneRemaining)} remaining to reach ${formatCurrency(currentMilestone.targetAmount)}.`
+              : progress.goal > 0
+                ? `${formatCurrency(remaining)} remaining to reach the current goal.`
+                : "Track the live total and see how public and internal support are building together."}
           </p>
           <span className="pulse-link">
             Open progress

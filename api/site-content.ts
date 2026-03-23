@@ -20,10 +20,24 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function getCombinedMilestoneTarget(rows: any[]) {
+  return (rows ?? []).reduce((sum: number, item: any) => sum + Number(item?.target_amount ?? 0), 0);
+}
+
 async function getDonationSummary() {
+  return getDonationSummaryWithMilestones();
+}
+
+async function getDonationSummaryWithMilestones(milestones: Array<{ milestoneId: string; title: string; rowStart: number; rowEnd: number }> = []) {
   if (!appsScriptUrl) return null;
 
-  const response = await fetch(`${appsScriptUrl}?action=summary`);
+  const query = new URLSearchParams({ action: "summary" });
+
+  if (milestones.length) {
+    query.set("milestones", JSON.stringify(milestones));
+  }
+
+  const response = await fetch(`${appsScriptUrl}?${query.toString()}`);
   const data = await response.json();
 
   if (!response.ok || !data?.ok) {
@@ -58,6 +72,7 @@ function createEmptyContent() {
       nextAmount: 0,
       isVisible: false
     },
+    campaignMilestones: [],
     currentCampaign: {
       id: "",
       title: "",
@@ -69,6 +84,7 @@ function createEmptyContent() {
       totalRaised: 0,
       publicRaised: 0,
       donorCount: 0,
+      internalDonorCount: 0,
       goal: 0,
       internalRaised: 0,
       percent: 0,
@@ -80,25 +96,60 @@ function createEmptyContent() {
   };
 }
 
-function toMilestone(stepAmount: number, totalRaised: number) {
-  if (stepAmount <= 0) {
-    return { title: "", nextAmount: 0, isVisible: false };
-  }
+function createInternalMilestoneMap(rows: any[]) {
+  return (rows ?? []).reduce((acc: Record<string, { amount: number; donorCount: number }>, item: any) => {
+    if (!item?.milestone_id) return acc;
 
-  const nextAmount = (Math.floor(Math.max(totalRaised, 0) / stepAmount) + 1) * stepAmount;
-
-  return {
-    title: `Next milestone: ${formatCurrency(nextAmount)}`,
-    nextAmount,
-    isVisible: true
-  };
+    const current = acc[item.milestone_id] ?? { amount: 0, donorCount: 0 };
+    acc[item.milestone_id] = {
+      amount: current.amount + Number(item.amount ?? 0),
+      donorCount: current.donorCount + 1
+    };
+    return acc;
+  }, {});
 }
 
-function toProgress(campaign: any, summary: any) {
+function getInternalDonationEntryCount(rows: any[] = []) {
+  return (rows ?? []).length;
+}
+
+function toCampaignMilestones(rows: any[], summary: any, internalRows: any[] = [], internalDonorCount = 0) {
+  const milestoneSummaryMap = new Map(
+    (summary?.milestones ?? []).map((item: any) => [item.milestoneId, item])
+  );
+  const internalMilestoneMap = createInternalMilestoneMap(internalRows);
+
+  return (rows ?? []).map((item: any) => {
+    const milestoneSummary = milestoneSummaryMap.get(item.id);
+    const internalMilestone = internalMilestoneMap[item.id];
+    const raisedAmount = Number(milestoneSummary?.totalDonations ?? 0) + Number(internalMilestone?.amount ?? 0);
+    const donorCount = Number(milestoneSummary?.donationEntries ?? milestoneSummary?.donorCount ?? 0) + Number(internalMilestone?.donorCount ?? 0);
+    const targetAmount = Number(item.target_amount ?? 0);
+    const percent = targetAmount > 0
+      ? Math.min(Math.round(((raisedAmount / targetAmount) * 100) * 100) / 100, 100)
+      : 0;
+
+    return {
+      id: item.id,
+      title: item.title,
+      targetAmount,
+      rowStart: Number(item.row_start ?? 0),
+      rowEnd: Number(item.row_end ?? 0),
+      status: item.status ?? "Active",
+      displayOrder: Number(item.display_order ?? 0),
+      raisedAmount,
+      donorCount,
+      percent,
+      note: item.note ?? ""
+    };
+  });
+}
+
+function toProgress(campaign: any, summary: any, campaignMilestones: any[] = [], internalDonorCount = 0) {
   const publicRaised = summary?.totalDonations ?? campaign?.public_amount ?? 0;
-  const donorCount = summary?.donorCount ?? campaign?.donor_count ?? 0;
+  const donorCount = summary?.donationEntries ?? summary?.donorCount ?? campaign?.donor_count ?? 0;
   const internalRaised = campaign?.internal_amount ?? 0;
-  const goal = campaign?.goal_amount ?? 0;
+  const goal = getCombinedMilestoneTarget(campaignMilestones) || (campaign?.goal_amount ?? 0);
   const totalRaised = publicRaised + internalRaised;
   const percent = goal > 0
     ? Math.min(Math.round(((totalRaised / goal) * 100) * 100) / 100, 100)
@@ -108,6 +159,7 @@ function toProgress(campaign: any, summary: any) {
     totalRaised,
     publicRaised,
     donorCount,
+    internalDonorCount,
     goal,
     internalRaised,
     percent,
@@ -116,7 +168,7 @@ function toProgress(campaign: any, summary: any) {
 }
 
 export default async function handler(_req: any, res: any) {
-  res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=300");
+  res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60");
 
   try {
     const summary = await getDonationSummary().catch(() => null);
@@ -124,7 +176,7 @@ export default async function handler(_req: any, res: any) {
 
     if (!supabase) {
       const publicRaised = summary?.totalDonations ?? 0;
-      const donorCount = summary?.donorCount ?? 0;
+      const donorCount = summary?.donationEntries ?? summary?.donorCount ?? 0;
 
       return res.status(200).json({
         ...base,
@@ -133,6 +185,7 @@ export default async function handler(_req: any, res: any) {
           totalRaised: publicRaised,
           publicRaised,
           donorCount,
+          internalDonorCount: 0,
           lastUpdated: summary ? new Date().toISOString() : ""
         }
       });
@@ -148,7 +201,23 @@ export default async function handler(_req: any, res: any) {
 
     const settings = settingsRes.data;
     const campaign = campaignRes.data;
-    const progress = toProgress(campaign, summary);
+    const [milestoneRes, internalRowsRes] = campaign?.id
+      ? await Promise.all([
+          supabase.from("campaign_milestones").select("*").eq("campaign_id", campaign.id).order("display_order", { ascending: true }),
+          supabase.from("campaign_internal_adjustments").select("id, campaign_id, milestone_id, name, amount, notes, added_at").eq("campaign_id", campaign.id)
+        ])
+      : [{ data: [], error: null }, { data: [], error: null }];
+    const campaignMilestones = milestoneRes.data ?? [];
+    const internalEntryCount = getInternalDonationEntryCount(internalRowsRes.data ?? []);
+    const milestoneSummary = await getDonationSummaryWithMilestones(
+      campaignMilestones.map((item: any) => ({
+        milestoneId: item.id,
+        title: item.title,
+        rowStart: Number(item.row_start ?? 0),
+        rowEnd: Number(item.row_end ?? 0)
+      }))
+    ).catch(() => summary);
+    const progress = toProgress(campaign, milestoneSummary, campaignMilestones, internalEntryCount);
 
     const payload = {
       ...base,
@@ -176,7 +245,23 @@ export default async function handler(_req: any, res: any) {
         title: settings?.footer_title ?? "",
         summary: settings?.footer_summary ?? ""
       },
-      milestone: toMilestone(Number(settings?.milestone_step_amount ?? 0), progress.totalRaised),
+      milestone: progress.totalRaised > 0
+        ? {
+            title: `${formatCurrency(progress.totalRaised)} already raised for this campaign.`,
+            nextAmount: 0,
+            isVisible: true
+          }
+        : {
+            title: "",
+            nextAmount: 0,
+            isVisible: false
+          },
+      campaignMilestones: toCampaignMilestones(
+        campaignMilestones,
+        milestoneSummary,
+        internalRowsRes.data ?? [],
+        internalEntryCount
+      ),
       currentCampaign: {
         id: campaign?.id ?? "",
         title: campaign?.title ?? "",

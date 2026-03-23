@@ -3,6 +3,7 @@ import { AppShell } from "./AppShell";
 import { AboutPage } from "../pages/AboutPage";
 import { CampaignsPage } from "../pages/CampaignsPage";
 import { HomePage } from "../pages/HomePage";
+import { NotFoundPage } from "../pages/NotFoundPage";
 import { PastCampaignsPage } from "../pages/PastCampaignsPage";
 import { UpdatesPage } from "../pages/UpdatesPage";
 import { AdminLoginPage } from "../pages/admin/AdminLoginPage";
@@ -19,7 +20,8 @@ export const router = createBrowserRouter([
       { path: "past-campaigns", element: <PastCampaignsPage /> },
       { path: "about", element: <AboutPage /> },
       { path: "admin/login", element: <AdminLoginPage /> },
-      { path: "admin", element: <AdminPage /> }
+      { path: "admin", element: <AdminPage /> },
+      { path: "*", element: <NotFoundPage /> }
     ]
   }
 ]);

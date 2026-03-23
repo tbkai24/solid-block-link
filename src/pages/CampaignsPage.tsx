@@ -1,3 +1,4 @@
+import { CampaignMilestonesSection } from "../components/home/CampaignMilestonesSection";
 import { Link } from "react-router-dom";
 import { useSiteContent } from "../hooks/useSiteContent";
 
@@ -32,6 +33,8 @@ export function CampaignsPage() {
           <p className="muted-text">This space keeps the public-facing campaign message focused and easy to scan.</p>
         </aside>
       </div>
+
+      <CampaignMilestonesSection milestones={content.campaignMilestones} />
     </section>
   );
 }
