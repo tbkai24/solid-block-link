@@ -1,5 +1,10 @@
+const SITE_CONTENT_CACHE_KEY = "sbl-site-content-cache";
 const SITE_CONTENT_REFRESH_KEY = "sbl-site-content-refresh-at";
 const SITE_CONTENT_REFRESH_EVENT = "sbl:site-content-refresh";
+
+export function getSiteContentCacheKey() {
+  return SITE_CONTENT_CACHE_KEY;
+}
 
 export function getSiteContentRefreshKey() {
   return SITE_CONTENT_REFRESH_KEY;

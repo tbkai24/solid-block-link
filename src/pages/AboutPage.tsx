@@ -1,12 +1,22 @@
 import { useSiteContent } from "../hooks/useSiteContent";
 
 export function AboutPage() {
-  const { content } = useSiteContent();
+  const { content, loading, error, hasContent } = useSiteContent();
   const sections = [
     { title: content.about.introTitle, body: content.about.intro },
     { title: content.about.storyTitle, body: content.about.story },
     { title: content.about.missionTitle, body: content.about.mission }
   ].filter((section) => section.title || section.body);
+
+  if (!hasContent && loading && !error) {
+    return (
+      <section className="page-panel site-loading-panel">
+        <p className="eyebrow">About</p>
+        <h1>Loading the Solid Block Link story</h1>
+        <p className="page-lead">Please wait while the page pulls the latest public content.</p>
+      </section>
+    );
+  }
 
   const leadSection = sections[0];
   const supportingSections = sections.slice(1);

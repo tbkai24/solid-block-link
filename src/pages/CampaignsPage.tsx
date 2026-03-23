@@ -3,7 +3,17 @@ import { Link } from "react-router-dom";
 import { useSiteContent } from "../hooks/useSiteContent";
 
 export function CampaignsPage() {
-  const { content } = useSiteContent();
+  const { content, loading, error, hasContent } = useSiteContent();
+
+  if (!hasContent && loading && !error) {
+    return (
+      <section className="page-panel site-loading-panel">
+        <p className="eyebrow">Campaigns</p>
+        <h1>Loading campaign direction</h1>
+        <p className="page-lead">The latest campaign details are on the way.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="page-shell">

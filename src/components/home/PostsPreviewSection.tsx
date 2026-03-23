@@ -41,7 +41,6 @@ export function PostsPreviewSection({ updates, embeds }: PostsPreviewSectionProp
       />
       <div className="updates-slider-head">
         <div>
-          <p className="muted-text">Use the controls to browse one featured highlight at a time.</p>
         </div>
         {pageCount > 1 ? (
           <div className="updates-slider-controls">

@@ -237,6 +237,13 @@ a { color: inherit; text-decoration: none; }
   gap: 18px; 
 } 
 
+.site-loading-panel {
+  display: grid;
+  gap: 10px;
+  min-height: 280px;
+  align-content: center;
+}
+
 .not-found-panel {
   max-width: 760px;
   margin-inline: auto;

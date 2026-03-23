@@ -10,7 +10,7 @@ function getPageCount(total: number, pageSize: number) {
 }
 
 export function UpdatesPage() {
-  const { content } = useSiteContent();
+  const { content, loading, error, hasContent } = useSiteContent();
   const latestUpdates = content.updates;
   const [activeTab, setActiveTab] = useState<"latest" | "past">("latest");
   const [latestPage, setLatestPage] = useState(0);
@@ -42,6 +42,16 @@ export function UpdatesPage() {
 
       return current === pastPageCount - 1 ? 0 : current + 1;
     });
+  }
+
+  if (!hasContent && loading && !error) {
+    return (
+      <section className="page-panel site-loading-panel">
+        <p className="eyebrow">Updates</p>
+        <h1>Loading campaign updates</h1>
+        <p className="page-lead">Featured posts and campaign history are being fetched now.</p>
+      </section>
+    );
   }
 
   return (

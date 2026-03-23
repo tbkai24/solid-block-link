@@ -11,6 +11,7 @@ type UseSiteContentState = {
   content: SiteContent;
   loading: boolean;
   error: string;
+  hasContent: boolean;
 };
 
 const emptyContent: SiteContent = {
@@ -60,10 +61,27 @@ const emptyContent: SiteContent = {
   pastCampaigns: []
 };
 
+function hasRenderableSiteContent(content: SiteContent) {
+  return Boolean(
+    content.logoUrl ||
+    content.heroTitle ||
+    content.heroSummary ||
+    content.currentCampaign.id ||
+    content.currentCampaign.title ||
+    content.about.title ||
+    content.footer.title ||
+    content.progress.totalRaised ||
+    content.updates.length ||
+    content.campaignMilestones.length ||
+    content.pastCampaigns.length
+  );
+}
+
 let sharedState: UseSiteContentState = {
   content: emptyContent,
   loading: true,
-  error: ""
+  error: "",
+  hasContent: false
 };
 
 let inflightRequest: Promise<void> | null = null;
@@ -83,7 +101,8 @@ async function refreshSiteContent() {
       sharedState = {
         content: nextContent,
         loading: false,
-        error: ""
+        error: "",
+        hasContent: hasRenderableSiteContent(nextContent)
       };
     } catch (error) {
       sharedState = {

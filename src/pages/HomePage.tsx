@@ -4,11 +4,20 @@ import { CurrentCampaignSection } from "../components/home/CurrentCampaignSectio
 import { HeroSection } from "../components/home/HeroSection";
 import { PostsPreviewSection } from "../components/home/PostsPreviewSection";
 import { ProgressSection } from "../components/home/ProgressSection";
-import { UpdatesSection } from "../components/home/UpdatesSection";
 import { useSiteContent } from "../hooks/useSiteContent";
 
 export function HomePage() {
-  const { content, loading, error } = useSiteContent();
+  const { content, loading, error, hasContent } = useSiteContent();
+
+  if (!hasContent && loading && !error) {
+    return (
+      <section className="page-panel site-loading-panel">
+        <p className="eyebrow">Loading</p>
+        <h1>Preparing the latest Solid Block Link site content</h1>
+        <p className="page-lead">Please wait a moment while we pull the live campaign data.</p>
+      </section>
+    );
+  }
 
   return (
     <>
@@ -19,7 +28,6 @@ export function HomePage() {
       <CurrentCampaignSection campaign={content.currentCampaign} />
       <CampaignMilestonesSection milestones={content.campaignMilestones} compact />
       <PostsPreviewSection updates={content.updates} embeds={content.embeds} />
-      <UpdatesSection updates={content.updates} />
       {loading && <section className="page-panel"><p>Refreshing content...</p></section>}
     </>
   );

@@ -11,7 +11,7 @@ export function CurrentCampaignSection({ campaign }: CurrentCampaignSectionProps
       <SectionHeading
         eyebrow="Current Campaign"
         title={campaign.title}
-        copy="Keep the current push easy to understand: what it supports, why it matters, and what result the community is trying to reach."
+        copy={campaign.summary || "Campaign description"}
       />
       <div className="campaign-status-row">
         <p className="chip">{campaign.status}</p>
