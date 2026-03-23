@@ -168,7 +168,7 @@ function toProgress(campaign: any, summary: any, campaignMilestones: any[] = [],
 }
 
 export default async function handler(_req: any, res: any) {
-  res.setHeader("Cache-Control", "public, s-maxage=30, stale-while-revalidate=60");
+  res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
 
   try {
     const summary = await getDonationSummary().catch(() => null);

@@ -3,7 +3,7 @@ import { getPublicSiteContent } from "../services/publicSiteContent";
 import { getSiteContentRefreshEvent, getSiteContentRefreshKey } from "../services/siteContentCache";
 import { SiteContent } from "../types/content";
 
-const CACHE_TTL_MS = 30 * 1000;
+const CACHE_TTL_MS = 15 * 1000;
 const SITE_CONTENT_REFRESH_EVENT = getSiteContentRefreshEvent();
 const SITE_CONTENT_REFRESH_KEY = getSiteContentRefreshKey();
 
