@@ -113,6 +113,36 @@ function getInternalDonationEntryCount(rows: any[] = []) {
   return (rows ?? []).length;
 }
 
+async function fetchInternalAdjustmentRows(campaignId: string) {
+  if (!supabase) return [];
+
+  const primary = await supabase
+    .from("campaign_internal_adjustments")
+    .select("id, campaign_id, milestone_id, name, amount, notes, added_at")
+    .eq("campaign_id", campaignId);
+
+  if (!primary.error) {
+    return primary.data ?? [];
+  }
+
+  const fallback = await supabase
+    .from("campaign_internal_adjustments")
+    .select("id, campaign_id, label, amount, notes, added_at")
+    .eq("campaign_id", campaignId);
+
+  if (fallback.error) throw fallback.error;
+
+  return (fallback.data ?? []).map((item: any) => ({
+    id: String(item.id),
+    campaign_id: String(item.campaign_id),
+    milestone_id: null,
+    name: String(item.label ?? ""),
+    amount: Number(item.amount ?? 0),
+    notes: String(item.notes ?? ""),
+    added_at: String(item.added_at ?? "")
+  }));
+}
+
 function toCampaignMilestones(rows: any[], summary: any, internalRows: any[] = [], internalDonorCount = 0) {
   const milestoneSummaryMap = new Map(
     (summary?.milestones ?? []).map((item: any) => [item.milestoneId, item])
@@ -201,14 +231,14 @@ export default async function handler(_req: any, res: any) {
 
     const settings = settingsRes.data;
     const campaign = campaignRes.data;
-    const [milestoneRes, internalRowsRes] = campaign?.id
+    const [milestoneRes, internalRows] = campaign?.id
       ? await Promise.all([
           supabase.from("campaign_milestones").select("*").eq("campaign_id", campaign.id).order("display_order", { ascending: true }),
-          supabase.from("campaign_internal_adjustments").select("id, campaign_id, milestone_id, name, amount, notes, added_at").eq("campaign_id", campaign.id)
+          fetchInternalAdjustmentRows(campaign.id)
         ])
-      : [{ data: [], error: null }, { data: [], error: null }];
+      : [{ data: [], error: null }, []];
     const campaignMilestones = milestoneRes.data ?? [];
-    const internalEntryCount = getInternalDonationEntryCount(internalRowsRes.data ?? []);
+    const internalEntryCount = getInternalDonationEntryCount(internalRows);
     const milestoneSummary = await getDonationSummaryWithMilestones(
       campaignMilestones.map((item: any) => ({
         milestoneId: item.id,
@@ -259,7 +289,7 @@ export default async function handler(_req: any, res: any) {
       campaignMilestones: toCampaignMilestones(
         campaignMilestones,
         milestoneSummary,
-        internalRowsRes.data ?? [],
+        internalRows,
         internalEntryCount
       ),
       currentCampaign: {

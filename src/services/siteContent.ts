@@ -69,6 +69,36 @@ function getInternalDonationEntryCount(rows: InternalAdjustmentRow[] = []) {
   return rows.length;
 }
 
+async function fetchInternalAdjustmentRows(campaignId: string): Promise<InternalAdjustmentRow[]> {
+  if (!supabase) return [];
+
+  const primary = await supabase
+    .from("campaign_internal_adjustments")
+    .select("id, campaign_id, milestone_id, name, amount, notes, added_at")
+    .eq("campaign_id", campaignId);
+
+  if (!primary.error) {
+    return (primary.data ?? []) as InternalAdjustmentRow[];
+  }
+
+  const fallback = await supabase
+    .from("campaign_internal_adjustments")
+    .select("id, campaign_id, label, amount, notes, added_at")
+    .eq("campaign_id", campaignId);
+
+  if (fallback.error) throw fallback.error;
+
+  return (fallback.data ?? []).map((item) => ({
+    id: String(item.id),
+    campaign_id: String(item.campaign_id),
+    milestone_id: null,
+    name: String((item as { label?: string | null }).label ?? ""),
+    amount: Number(item.amount ?? 0),
+    notes: String(item.notes ?? ""),
+    added_at: String(item.added_at ?? "")
+  }));
+}
+
 function toCampaignMilestones(
   rows: CampaignMilestoneRow[],
   summary: SummaryInput,
@@ -289,18 +319,14 @@ export async function getSiteContent(): Promise<SiteContent> {
 
   if (!campaignRes.error && campaignRes.data) {
     const campaign = campaignRes.data;
-    const [milestoneRes, internalRowsRes] = await Promise.all([
+    const [milestoneRes, internalRows] = await Promise.all([
       supabase
         .from("campaign_milestones")
         .select("*")
         .eq("campaign_id", campaign.id)
         .order("display_order", { ascending: true })
         .returns<CampaignMilestoneRow[]>(),
-      supabase
-        .from("campaign_internal_adjustments")
-        .select("id, campaign_id, milestone_id, name, amount, notes, added_at")
-        .eq("campaign_id", campaign.id)
-        .returns<InternalAdjustmentRow[]>()
+      fetchInternalAdjustmentRows(campaign.id)
     ]);
     const milestoneRows = !milestoneRes.error ? (milestoneRes.data ?? []) : [];
     const donationSummary = await getDonationSummary(
@@ -311,7 +337,7 @@ export async function getSiteContent(): Promise<SiteContent> {
         rowEnd: Number(item.row_end ?? 0)
       }))
     ).catch(() => initialDonationSummary);
-    const internalEntryCount = getInternalDonationEntryCount(internalRowsRes.data ?? []);
+    const internalEntryCount = getInternalDonationEntryCount(internalRows);
     const progress = toProgress(campaign, donationSummary, milestoneRows, internalEntryCount);
     partial.currentCampaign = {
       id: campaign.id,
@@ -324,7 +350,7 @@ export async function getSiteContent(): Promise<SiteContent> {
     partial.campaignMilestones = toCampaignMilestones(
       milestoneRows,
       donationSummary,
-      internalRowsRes.data ?? [],
+      internalRows,
       internalEntryCount
     );
 
