@@ -12,10 +12,6 @@ const supabase = supabaseUrl && supabaseServerKey
   ? createClient(supabaseUrl, supabaseServerKey)
   : null;
 
-function normalizeLookupLabel(value?: string | null) {
-  return value === "SBL Lookup" ? "SBL Donation Lookup" : (value ?? "SBL Donation Lookup");
-}
-
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -26,10 +22,6 @@ function formatCurrency(value: number) {
 
 function getCombinedMilestoneTarget(rows: any[]) {
   return (rows ?? []).reduce((sum: number, item: any) => sum + Number(item?.target_amount ?? 0), 0);
-}
-
-async function getDonationSummary() {
-  return getDonationSummaryWithMilestones();
 }
 
 async function getDonationSummaryWithMilestones(milestones: Array<{ milestoneId: string; title: string; rowStart: number; rowEnd: number }> = []) {
@@ -51,55 +43,6 @@ async function getDonationSummaryWithMilestones(milestones: Array<{ milestoneId:
   return data;
 }
 
-function createEmptyContent() {
-  return {
-    logoUrl: "",
-    heroTitle: "",
-    heroSummary: "",
-    donateCta: { label: "Donate Now", href: "#" },
-    lookupCta: { label: "SBL Donation Lookup", href: "#" },
-    about: {
-      title: "",
-      introTitle: "",
-      intro: "",
-      storyTitle: "",
-      story: "",
-      missionTitle: "",
-      mission: ""
-    },
-    footer: {
-      title: "",
-      summary: ""
-    },
-    milestone: {
-      title: "",
-      nextAmount: 0,
-      isVisible: false
-    },
-    campaignMilestones: [],
-    currentCampaign: {
-      id: "",
-      title: "",
-      status: "Active",
-      summary: "",
-      outcome: ""
-    },
-    progress: {
-      totalRaised: 0,
-      publicRaised: 0,
-      donorCount: 0,
-      internalDonorCount: 0,
-      goal: 0,
-      internalRaised: 0,
-      percent: 0,
-      lastUpdated: ""
-    },
-    updates: [],
-    embeds: [],
-    pastCampaigns: []
-  };
-}
-
 function createInternalMilestoneMap(rows: any[]) {
   return (rows ?? []).reduce((acc: Record<string, { amount: number; donorCount: number }>, item: any) => {
     if (!item?.milestone_id) return acc;
@@ -111,10 +54,6 @@ function createInternalMilestoneMap(rows: any[]) {
     };
     return acc;
   }, {});
-}
-
-function getInternalDonationEntryCount(rows: any[] = []) {
-  return (rows ?? []).length;
 }
 
 async function fetchInternalAdjustmentRows(campaignId: string) {
@@ -147,7 +86,11 @@ async function fetchInternalAdjustmentRows(campaignId: string) {
   }));
 }
 
-function toCampaignMilestones(rows: any[], summary: any, internalRows: any[] = [], internalDonorCount = 0) {
+function getInternalDonationEntryCount(rows: any[] = []) {
+  return rows.length;
+}
+
+function toCampaignMilestoneMetrics(rows: any[], summary: any, internalRows: any[] = []) {
   const milestoneSummaryMap = new Map(
     (summary?.milestones ?? []).map((item: any) => [item.milestoneId, item])
   );
@@ -165,16 +108,9 @@ function toCampaignMilestones(rows: any[], summary: any, internalRows: any[] = [
 
     return {
       id: item.id,
-      title: item.title,
-      targetAmount,
-      rowStart: Number(item.row_start ?? 0),
-      rowEnd: Number(item.row_end ?? 0),
-      status: item.status ?? "Active",
-      displayOrder: Number(item.display_order ?? 0),
       raisedAmount,
       donorCount,
-      percent,
-      note: item.note ?? ""
+      percent
     };
   });
 }
@@ -205,36 +141,35 @@ export default async function handler(_req: any, res: any) {
   res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
 
   try {
-    const summaryPromise = getDonationSummary().catch(() => null);
-    const summary = await summaryPromise;
-    const base = createEmptyContent();
-
     if (!supabase) {
-      const publicRaised = summary?.totalDonations ?? 0;
-      const donorCount = summary?.donationEntries ?? summary?.donorCount ?? 0;
-
       return res.status(200).json({
-        ...base,
         progress: {
-          ...base.progress,
-          totalRaised: publicRaised,
-          publicRaised,
-          donorCount,
+          totalRaised: 0,
+          publicRaised: 0,
+          donorCount: 0,
           internalDonorCount: 0,
-          lastUpdated: summary ? new Date().toISOString() : ""
+          goal: 0,
+          internalRaised: 0,
+          percent: 0,
+          lastUpdated: ""
+        },
+        campaignMilestones: [],
+        milestone: {
+          title: "",
+          nextAmount: 0,
+          isVisible: false
         }
       });
     }
 
-    const [settingsRes, campaignRes, updatesRes, embedsRes, pastRes] = await Promise.all([
-      supabase.from("site_settings").select("*").limit(1).maybeSingle(),
-      supabase.from("campaigns").select("*").eq("featured", true).eq("is_past", false).limit(1).maybeSingle(),
-      supabase.from("updates").select("*").order("published_at", { ascending: false }).limit(8),
-      supabase.from("embeds").select("*").eq("featured", true).order("display_order", { ascending: true }).limit(4),
-      supabase.from("campaigns").select("*").eq("is_past", true).order("last_updated", { ascending: false }).limit(6)
-    ]);
+    const campaignRes = await supabase
+      .from("campaigns")
+      .select("*")
+      .eq("featured", true)
+      .eq("is_past", false)
+      .limit(1)
+      .maybeSingle();
 
-    const settings = settingsRes.data;
     const campaign = campaignRes.data;
     const [milestoneRes, internalRows] = campaign?.id
       ? await Promise.all([
@@ -243,44 +178,20 @@ export default async function handler(_req: any, res: any) {
         ])
       : [{ data: [], error: null }, []];
     const campaignMilestones = milestoneRes.data ?? [];
-    const internalEntryCount = getInternalDonationEntryCount(internalRows);
-    const milestoneSummaryPromise = getDonationSummaryWithMilestones(
+    const summary = await getDonationSummaryWithMilestones(
       campaignMilestones.map((item: any) => ({
         milestoneId: item.id,
         title: item.title,
         rowStart: Number(item.row_start ?? 0),
         rowEnd: Number(item.row_end ?? 0)
       }))
-    ).catch(() => summaryPromise);
-    const milestoneSummary = await milestoneSummaryPromise;
-    const progress = toProgress(campaign, milestoneSummary, campaignMilestones, internalEntryCount);
+    ).catch(() => null);
+    const internalEntryCount = getInternalDonationEntryCount(internalRows);
+    const progress = toProgress(campaign, summary, campaignMilestones, internalEntryCount);
 
-    const payload = {
-      ...base,
-      logoUrl: settings?.logo_url ?? "",
-      heroTitle: settings?.hero_title ?? "",
-      heroSummary: settings?.hero_summary ?? "",
-      donateCta: {
-        label: settings?.donate_cta_label ?? "Donate Now",
-        href: settings?.donate_cta_url ?? "#"
-      },
-      lookupCta: {
-        label: normalizeLookupLabel(settings?.lookup_cta_label),
-        href: settings?.lookup_cta_url ?? "#"
-      },
-      about: {
-        title: settings?.about_title ?? "",
-        introTitle: settings?.about_intro_title ?? "",
-        intro: settings?.about_intro ?? "",
-        storyTitle: settings?.about_story_title ?? "",
-        story: settings?.about_story ?? "",
-        missionTitle: settings?.about_mission_title ?? "",
-        mission: settings?.about_mission ?? ""
-      },
-      footer: {
-        title: settings?.footer_title ?? "",
-        summary: settings?.footer_summary ?? ""
-      },
+    return res.status(200).json({
+      progress,
+      campaignMilestones: toCampaignMilestoneMetrics(campaignMilestones, summary, internalRows),
       milestone: progress.totalRaised > 0
         ? {
             title: `${formatCurrency(progress.totalRaised)} already raised for this campaign.`,
@@ -291,51 +202,12 @@ export default async function handler(_req: any, res: any) {
             title: "",
             nextAmount: 0,
             isVisible: false
-          },
-      campaignMilestones: toCampaignMilestones(
-        campaignMilestones,
-        milestoneSummary,
-        internalRows,
-        internalEntryCount
-      ),
-      currentCampaign: {
-        id: campaign?.id ?? "",
-        title: campaign?.title ?? "",
-        status: campaign?.status ?? "Active",
-        summary: campaign?.summary ?? "",
-        outcome: campaign?.outcome ?? ""
-      },
-      progress,
-      updates: (updatesRes.data ?? []).map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        summary: item.summary,
-        label: item.content_label,
-        platform: item.platform,
-        date: new Date(item.published_at).toLocaleDateString(),
-        href: item.href,
-        featured: item.featured
-      })),
-      embeds: (embedsRes.data ?? []).map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        platform: item.platform,
-        embedNote: item.embed_note
-      })),
-      pastCampaigns: (pastRes.data ?? []).map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        status: item.status,
-        summary: item.summary,
-        outcome: item.outcome
-      }))
-    };
-
-    return res.status(200).json(payload);
+          }
+    });
   } catch (error) {
     return res.status(500).json({
       ok: false,
-      message: error instanceof Error ? error.message : "Unable to load cached site content."
+      message: error instanceof Error ? error.message : "Unable to load site metrics."
     });
   }
 }

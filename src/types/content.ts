@@ -91,3 +91,9 @@ export type SiteContent = {
   embeds: EmbedItem[];
   pastCampaigns: CampaignItem[];
 };
+
+export type SiteMetricsPayload = {
+  progress: ProgressStats;
+  campaignMilestones: Array<Pick<CampaignMilestoneItem, "id" | "raisedAmount" | "donorCount" | "percent">>;
+  milestone: MilestoneContent;
+};

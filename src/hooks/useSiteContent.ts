@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getPublicSiteContent } from "../services/publicSiteContent";
+import { getPublicSiteMetrics, getPublicSiteShell } from "../services/publicSiteContent";
 import { getSiteContentCacheKey, getSiteContentRefreshEvent, getSiteContentRefreshKey } from "../services/siteContentCache";
 import { SiteContent } from "../types/content";
 
@@ -118,6 +118,37 @@ function hasRenderableSiteContent(content: SiteContent) {
   );
 }
 
+function applyMetrics(content: SiteContent, metrics: {
+  progress: SiteContent["progress"];
+  milestone: SiteContent["milestone"];
+  campaignMilestones: Array<{ id: string; raisedAmount: number; donorCount: number; percent: number }>;
+}) {
+  const metricsById = new Map(metrics.campaignMilestones.map((item) => [item.id, item]));
+
+  return {
+    ...content,
+    progress: {
+      ...content.progress,
+      ...metrics.progress
+    },
+    milestone: {
+      ...content.milestone,
+      ...metrics.milestone
+    },
+    campaignMilestones: content.campaignMilestones.map((item) => {
+      const next = metricsById.get(item.id);
+      if (!next) return item;
+
+      return {
+        ...item,
+        raisedAmount: next.raisedAmount,
+        donorCount: next.donorCount,
+        percent: next.percent
+      };
+    })
+  };
+}
+
 function readSiteContentSnapshot() {
   if (typeof window === "undefined") return null;
 
@@ -173,14 +204,25 @@ async function refreshSiteContent() {
 
   inflightRequest = (async () => {
     try {
-      const nextContent = normalizeSiteContent(await getPublicSiteContent());
+      const nextShell = normalizeSiteContent(await getPublicSiteShell());
       sharedState = {
-        content: nextContent,
+        content: nextShell,
         loading: false,
         error: "",
-        hasContent: hasRenderableSiteContent(nextContent)
+        hasContent: hasRenderableSiteContent(nextShell)
       };
-      writeSiteContentSnapshot(nextContent);
+      writeSiteContentSnapshot(nextShell);
+      emit();
+
+      const metrics = await getPublicSiteMetrics();
+      const mergedContent = applyMetrics(nextShell, metrics);
+      sharedState = {
+        content: mergedContent,
+        loading: false,
+        error: "",
+        hasContent: hasRenderableSiteContent(mergedContent)
+      };
+      writeSiteContentSnapshot(mergedContent);
     } catch (error) {
       sharedState = {
         ...sharedState,

@@ -1,4 +1,4 @@
-import { SiteContent } from "../types/content";
+import { SiteContent, SiteMetricsPayload } from "../types/content";
 import { getSiteContent } from "./siteContent";
 
 const CACHED_API_TIMEOUT_MS = 8000;
@@ -55,6 +55,62 @@ async function fetchCachedSiteContent(): Promise<SiteContent> {
   }
 }
 
+async function fetchCachedSiteShell(): Promise<SiteContent> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), CACHED_API_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("/api/site-shell", {
+      headers: {
+        Accept: "application/json"
+      },
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error("Cached site shell request failed.");
+    }
+
+    return (await response.json()) as SiteContent;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Cached site shell request timed out.");
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function fetchCachedSiteMetrics(): Promise<SiteMetricsPayload> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), CACHED_API_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("/api/site-metrics", {
+      headers: {
+        Accept: "application/json"
+      },
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error("Cached site metrics request failed.");
+    }
+
+    return (await response.json()) as SiteMetricsPayload;
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Cached site metrics request timed out.");
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export async function getPublicSiteContent(): Promise<SiteContent> {
   if (typeof window === "undefined" || isLocalHost()) {
     return withTimeout(
@@ -72,5 +128,67 @@ export async function getPublicSiteContent(): Promise<SiteContent> {
       FALLBACK_TIMEOUT_MS,
       "Direct site content request timed out."
     );
+  }
+}
+
+export async function getPublicSiteShell(): Promise<SiteContent> {
+  if (typeof window === "undefined" || isLocalHost()) {
+    return withTimeout(
+      getSiteContent(),
+      FALLBACK_TIMEOUT_MS,
+      "Direct site shell request timed out."
+    );
+  }
+
+  try {
+    return await fetchCachedSiteShell();
+  } catch {
+    return withTimeout(
+      getSiteContent(),
+      FALLBACK_TIMEOUT_MS,
+      "Direct site shell request timed out."
+    );
+  }
+}
+
+export async function getPublicSiteMetrics(): Promise<SiteMetricsPayload> {
+  if (typeof window === "undefined" || isLocalHost()) {
+    const content = await withTimeout(
+      getSiteContent(),
+      FALLBACK_TIMEOUT_MS,
+      "Direct site metrics request timed out."
+    );
+
+    return {
+      progress: content.progress,
+      campaignMilestones: content.campaignMilestones.map((item) => ({
+        id: item.id,
+        raisedAmount: item.raisedAmount,
+        donorCount: item.donorCount,
+        percent: item.percent
+      })),
+      milestone: content.milestone
+    };
+  }
+
+  try {
+    return await fetchCachedSiteMetrics();
+  } catch {
+    const content = await withTimeout(
+      getSiteContent(),
+      FALLBACK_TIMEOUT_MS,
+      "Direct site metrics request timed out."
+    );
+
+    return {
+      progress: content.progress,
+      campaignMilestones: content.campaignMilestones.map((item) => ({
+        id: item.id,
+        raisedAmount: item.raisedAmount,
+        donorCount: item.donorCount,
+        percent: item.percent
+      })),
+      milestone: content.milestone
+    };
   }
 }

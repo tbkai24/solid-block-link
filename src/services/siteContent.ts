@@ -267,7 +267,8 @@ function toContent(
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
-  const initialDonationSummary = await getDonationSummary().catch(() => null);
+  const initialDonationSummaryPromise = getDonationSummary().catch(() => null);
+  const initialDonationSummary = await initialDonationSummaryPromise;
   if (!hasSupabaseEnv || !supabase) return withSummaryFallback(initialDonationSummary);
 
   const [settingsRes, campaignRes, updatesRes, embedsRes, pastRes] = await Promise.all([
@@ -329,14 +330,15 @@ export async function getSiteContent(): Promise<SiteContent> {
       fetchInternalAdjustmentRows(campaign.id)
     ]);
     const milestoneRows = !milestoneRes.error ? (milestoneRes.data ?? []) : [];
-    const donationSummary = await getDonationSummary(
+    const donationSummaryPromise = getDonationSummary(
       milestoneRows.map((item) => ({
         milestoneId: item.id,
         title: item.title,
         rowStart: Number(item.row_start ?? 0),
         rowEnd: Number(item.row_end ?? 0)
       }))
-    ).catch(() => initialDonationSummary);
+    ).catch(() => initialDonationSummaryPromise);
+    const donationSummary = await donationSummaryPromise;
     const internalEntryCount = getInternalDonationEntryCount(internalRows);
     const progress = toProgress(campaign, donationSummary, milestoneRows, internalEntryCount);
     partial.currentCampaign = {
