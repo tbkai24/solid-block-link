@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
 import { getPublicSiteContent } from "../services/publicSiteContent";
-import { getSiteContentRefreshEvent, getSiteContentRefreshKey } from "../services/siteContentCache";
+import { getSiteContentCacheKey, getSiteContentRefreshEvent, getSiteContentRefreshKey } from "../services/siteContentCache";
 import { SiteContent } from "../types/content";
 
 const CACHE_TTL_MS = 15 * 1000;
+const SITE_CONTENT_CACHE_KEY = getSiteContentCacheKey();
 const SITE_CONTENT_REFRESH_EVENT = getSiteContentRefreshEvent();
 const SITE_CONTENT_REFRESH_KEY = getSiteContentRefreshKey();
+const CACHE_VERSION = 1;
 
 type UseSiteContentState = {
   content: SiteContent;
   loading: boolean;
   error: string;
   hasContent: boolean;
+};
+
+type SiteContentSnapshot = {
+  version: number;
+  savedAt: string;
+  content: SiteContent;
 };
 
 const emptyContent: SiteContent = {
@@ -77,11 +85,46 @@ function hasRenderableSiteContent(content: SiteContent) {
   );
 }
 
+function readSiteContentSnapshot() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(SITE_CONTENT_CACHE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as SiteContentSnapshot;
+    if (!parsed || parsed.version !== CACHE_VERSION || !parsed.content) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeSiteContentSnapshot(content: SiteContent) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(SITE_CONTENT_CACHE_KEY, JSON.stringify({
+      version: CACHE_VERSION,
+      savedAt: new Date().toISOString(),
+      content
+    } satisfies SiteContentSnapshot));
+  } catch {
+    // Ignore storage failures and keep the app responsive.
+  }
+}
+
+const initialSnapshot = readSiteContentSnapshot();
+const initialContent = initialSnapshot?.content ?? emptyContent;
+
 let sharedState: UseSiteContentState = {
-  content: emptyContent,
-  loading: true,
+  content: initialContent,
+  loading: !hasRenderableSiteContent(initialContent),
   error: "",
-  hasContent: false
+  hasContent: hasRenderableSiteContent(initialContent)
 };
 
 let inflightRequest: Promise<void> | null = null;
@@ -104,6 +147,7 @@ async function refreshSiteContent() {
         error: "",
         hasContent: hasRenderableSiteContent(nextContent)
       };
+      writeSiteContentSnapshot(nextContent);
     } catch (error) {
       sharedState = {
         ...sharedState,
@@ -143,6 +187,13 @@ export function useSiteContent(): UseSiteContentState {
   useEffect(() => {
     listeners.add(setState);
     startRefreshLoop();
+    if (!sharedState.hasContent) {
+      sharedState = {
+        ...sharedState,
+        loading: true
+      };
+      emit();
+    }
     void refreshSiteContent();
 
     return () => {
