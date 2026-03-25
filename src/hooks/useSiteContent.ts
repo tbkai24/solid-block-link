@@ -203,26 +203,49 @@ async function refreshSiteContent() {
   if (inflightRequest) return inflightRequest;
 
   inflightRequest = (async () => {
+    const previousContent = sharedState.content;
+    const hadPreviousContent = sharedState.hasContent;
+
     try {
       const nextShell = normalizeSiteContent(await getPublicSiteShell());
       sharedState = {
-        content: nextShell,
+        content: hadPreviousContent ? applyMetrics(nextShell, {
+          progress: previousContent.progress,
+          milestone: previousContent.milestone,
+          campaignMilestones: previousContent.campaignMilestones.map((item) => ({
+            id: item.id,
+            raisedAmount: item.raisedAmount,
+            donorCount: item.donorCount,
+            percent: item.percent
+          }))
+        }) : nextShell,
         loading: false,
         error: "",
         hasContent: hasRenderableSiteContent(nextShell)
       };
-      writeSiteContentSnapshot(nextShell);
+      writeSiteContentSnapshot(sharedState.content);
       emit();
 
-      const metrics = await getPublicSiteMetrics();
-      const mergedContent = applyMetrics(nextShell, metrics);
-      sharedState = {
-        content: mergedContent,
-        loading: false,
-        error: "",
-        hasContent: hasRenderableSiteContent(mergedContent)
-      };
-      writeSiteContentSnapshot(mergedContent);
+      try {
+        const metrics = await getPublicSiteMetrics();
+        const mergedContent = applyMetrics(nextShell, metrics);
+        sharedState = {
+          content: mergedContent,
+          loading: false,
+          error: "",
+          hasContent: hasRenderableSiteContent(mergedContent)
+        };
+        writeSiteContentSnapshot(mergedContent);
+      } catch (error) {
+        if (!sharedState.hasContent) {
+          throw error;
+        }
+
+        sharedState = {
+          ...sharedState,
+          loading: false
+        };
+      }
     } catch (error) {
       sharedState = {
         ...sharedState,
