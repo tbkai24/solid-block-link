@@ -69,6 +69,39 @@ const emptyContent: SiteContent = {
   pastCampaigns: []
 };
 
+function normalizeSiteContent(content?: Partial<SiteContent> | null): SiteContent {
+  return {
+    ...emptyContent,
+    ...content,
+    donateCta: content?.donateCta ?? emptyContent.donateCta,
+    lookupCta: content?.lookupCta ?? emptyContent.lookupCta,
+    about: {
+      ...emptyContent.about,
+      ...(content?.about ?? {})
+    },
+    footer: {
+      ...emptyContent.footer,
+      ...(content?.footer ?? {})
+    },
+    milestone: {
+      ...emptyContent.milestone,
+      ...(content?.milestone ?? {})
+    },
+    currentCampaign: {
+      ...emptyContent.currentCampaign,
+      ...(content?.currentCampaign ?? {})
+    },
+    progress: {
+      ...emptyContent.progress,
+      ...(content?.progress ?? {})
+    },
+    campaignMilestones: Array.isArray(content?.campaignMilestones) ? content.campaignMilestones : [],
+    updates: Array.isArray(content?.updates) ? content.updates : [],
+    embeds: Array.isArray(content?.embeds) ? content.embeds : [],
+    pastCampaigns: Array.isArray(content?.pastCampaigns) ? content.pastCampaigns : []
+  };
+}
+
 function hasRenderableSiteContent(content: SiteContent) {
   return Boolean(
     content.logoUrl ||
@@ -118,7 +151,7 @@ function writeSiteContentSnapshot(content: SiteContent) {
 }
 
 const initialSnapshot = readSiteContentSnapshot();
-const initialContent = initialSnapshot?.content ?? emptyContent;
+const initialContent = normalizeSiteContent(initialSnapshot?.content);
 
 let sharedState: UseSiteContentState = {
   content: initialContent,
@@ -140,7 +173,7 @@ async function refreshSiteContent() {
 
   inflightRequest = (async () => {
     try {
-      const nextContent = await getPublicSiteContent();
+      const nextContent = normalizeSiteContent(await getPublicSiteContent());
       sharedState = {
         content: nextContent,
         loading: false,

@@ -12,13 +12,15 @@ type PostsPreviewSectionProps = {
 };
 
 export function PostsPreviewSection({ updates, embeds }: PostsPreviewSectionProps) {
-  const featuredUpdates = updates.filter((item) => item.featured);
+  const safeUpdates = Array.isArray(updates) ? updates : [];
+  const safeEmbeds = Array.isArray(embeds) ? embeds : [];
+  const featuredUpdates = safeUpdates.filter((item) => item.featured);
   const hasFeaturedUpdates = featuredUpdates.length > 0;
   const [activePage, setActivePage] = useState(0);
-  const items = hasFeaturedUpdates ? featuredUpdates : embeds;
+  const items = hasFeaturedUpdates ? featuredUpdates : safeEmbeds;
   const pageCount = Math.max(1, Math.ceil(items.length / FEATURED_PAGE_SIZE));
   const visibleFeatured = featuredUpdates.slice(activePage * FEATURED_PAGE_SIZE, activePage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE);
-  const visibleEmbeds = embeds.slice(activePage * FEATURED_PAGE_SIZE, activePage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE);
+  const visibleEmbeds = safeEmbeds.slice(activePage * FEATURED_PAGE_SIZE, activePage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE);
 
   function move(direction: "prev" | "next") {
     if (pageCount <= 1) return;

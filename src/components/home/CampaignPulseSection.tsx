@@ -32,8 +32,10 @@ function formatUpdateDate(value: string) {
 }
 
 export function CampaignPulseSection({ campaign, milestones, progress, updates }: CampaignPulseSectionProps) {
-  const latestUpdate = updates.find((item) => item.label !== "Past Campaign") ?? updates[0];
-  const sortedMilestones = [...milestones].sort((left, right) => {
+  const safeUpdates = Array.isArray(updates) ? updates : [];
+  const safeMilestones = Array.isArray(milestones) ? milestones : [];
+  const latestUpdate = safeUpdates.find((item) => item.label !== "Past Campaign") ?? safeUpdates[0];
+  const sortedMilestones = [...safeMilestones].sort((left, right) => {
     const leftState = getMilestoneState(left);
     const rightState = getMilestoneState(right);
 
