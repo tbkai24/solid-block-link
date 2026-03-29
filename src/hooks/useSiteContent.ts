@@ -52,8 +52,11 @@ const emptyContent: SiteContent = {
     title: "",
     status: "Active",
     summary: "",
-    outcome: ""
+    outcome: "",
+    sheetName: "",
+    homepageOrder: 0
   },
+  homepageCampaigns: [],
   progress: {
     totalRaised: 0,
     publicRaised: 0,
@@ -91,6 +94,20 @@ function normalizeSiteContent(content?: Partial<SiteContent> | null): SiteConten
       ...emptyContent.currentCampaign,
       ...(content?.currentCampaign ?? {})
     },
+    homepageCampaigns: Array.isArray(content?.homepageCampaigns)
+      ? content.homepageCampaigns.map((item) => ({
+          ...item,
+          progress: {
+            ...emptyContent.progress,
+            ...(item?.progress ?? {})
+          },
+          milestone: {
+            ...emptyContent.milestone,
+            ...(item?.milestone ?? {})
+          },
+          campaignMilestones: Array.isArray(item?.campaignMilestones) ? item.campaignMilestones : []
+        }))
+      : [],
     progress: {
       ...emptyContent.progress,
       ...(content?.progress ?? {})
@@ -109,6 +126,7 @@ function hasRenderableSiteContent(content: SiteContent) {
     content.heroSummary ||
     content.currentCampaign.id ||
     content.currentCampaign.title ||
+    content.homepageCampaigns.length ||
     content.about.title ||
     content.footer.title ||
     content.progress.totalRaised ||
@@ -122,8 +140,15 @@ function applyMetrics(content: SiteContent, metrics: {
   progress: SiteContent["progress"];
   milestone: SiteContent["milestone"];
   campaignMilestones: Array<{ id: string; raisedAmount: number; donorCount: number; percent: number }>;
+  homepageCampaigns: Array<{
+    id: string;
+    progress: SiteContent["progress"];
+    milestone: SiteContent["milestone"];
+    campaignMilestones: Array<{ id: string; raisedAmount: number; donorCount: number; percent: number }>;
+  }>;
 }) {
   const metricsById = new Map(metrics.campaignMilestones.map((item) => [item.id, item]));
+  const campaignMetricsById = new Map(metrics.homepageCampaigns.map((item) => [item.id, item]));
 
   return {
     ...content,
@@ -135,6 +160,22 @@ function applyMetrics(content: SiteContent, metrics: {
       ...content.milestone,
       ...metrics.milestone
     },
+    homepageCampaigns: content.homepageCampaigns.map((item) => ({
+      ...item,
+      progress: campaignMetricsById.get(item.id)?.progress ?? item.progress,
+      milestone: campaignMetricsById.get(item.id)?.milestone ?? item.milestone,
+      campaignMilestones: item.campaignMilestones.map((milestoneItem) => {
+        const next = campaignMetricsById.get(item.id)?.campaignMilestones.find((current: { id: string }) => current.id === milestoneItem.id);
+        if (!next) return milestoneItem;
+
+        return {
+          ...milestoneItem,
+          raisedAmount: next.raisedAmount,
+          donorCount: next.donorCount,
+          percent: next.percent
+        };
+      })
+    })),
     campaignMilestones: content.campaignMilestones.map((item) => {
       const next = metricsById.get(item.id);
       if (!next) return item;
@@ -212,6 +253,17 @@ async function refreshSiteContent() {
         content: hadPreviousContent ? applyMetrics(nextShell, {
           progress: previousContent.progress,
           milestone: previousContent.milestone,
+          homepageCampaigns: previousContent.homepageCampaigns.map((item) => ({
+            id: item.id,
+            progress: item.progress,
+            milestone: item.milestone,
+            campaignMilestones: item.campaignMilestones.map((milestoneItem) => ({
+              id: milestoneItem.id,
+              raisedAmount: milestoneItem.raisedAmount,
+              donorCount: milestoneItem.donorCount,
+              percent: milestoneItem.percent
+            }))
+          })),
           campaignMilestones: previousContent.campaignMilestones.map((item) => ({
             id: item.id,
             raisedAmount: item.raisedAmount,

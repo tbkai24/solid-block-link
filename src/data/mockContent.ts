@@ -62,8 +62,67 @@ export const siteContent: SiteContent = {
     status: "Active",
     summary:
       "The active drive supports fan-powered marketing, promo content rollout, and high-impact visibility efforts for SB19.",
-    outcome: "Live now"
+    outcome: "Live now",
+    donateUrl: "#",
+    sheetName: "Breakout Marketing WAS",
+    homepageOrder: 1
   },
+  homepageCampaigns: [
+    {
+      id: "campaign-1",
+      title: "Current Campaign: Worldwide Promo Push",
+      status: "Active",
+      summary: "The active drive supports fan-powered marketing, promo content rollout, and high-impact visibility efforts for SB19.",
+      outcome: "Live now",
+      donateUrl: "#",
+      sheetName: "Breakout Marketing WAS",
+      homepageOrder: 1,
+      progress: {
+        totalRaised: 0,
+        publicRaised: 0,
+        donorCount: 0,
+        internalDonorCount: 0,
+        goal: 0,
+        internalRaised: 0,
+        percent: 0,
+        lastUpdated: "Waiting for live data"
+      },
+      milestone: {
+        title: "",
+        nextAmount: 0,
+        isVisible: false
+      },
+      campaignMilestones: [
+        {
+          id: "milestone-1",
+          title: "Milestone 1",
+          targetAmount: 650000,
+          rowStart: 2,
+          rowEnd: 100,
+          status: "Active",
+          displayOrder: 1,
+          raisedAmount: 388309,
+          donorCount: 92,
+          percent: 59.74,
+          note: "First funding bucket for the campaign launch window."
+        },
+        {
+          id: "milestone-2",
+          title: "Milestone 2",
+          targetAmount: 350000,
+          rowStart: 101,
+          rowEnd: 180,
+          status: "Active",
+          displayOrder: 2,
+          raisedAmount: 0,
+          donorCount: 0,
+          percent: 0,
+          note: "Second funding bucket that starts after the first row cutoff."
+        }
+      ],
+      milestoneCount: 2
+    }
+  ],
   progress: {
     totalRaised: 0,
     publicRaised: 0,

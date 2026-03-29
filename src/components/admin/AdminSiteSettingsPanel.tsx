@@ -69,10 +69,6 @@ export function AdminSiteSettingsPanel() {
           <textarea value={form.heroSummary} onChange={(e) => updateField("heroSummary", e.target.value)} placeholder="Short supporting copy for the homepage hero section." disabled={saving} />
         </label>
         <label>
-          <span>Donate CTA URL</span>
-          <input value={form.donateCtaUrl} onChange={(e) => updateField("donateCtaUrl", e.target.value)} placeholder="https://your-donate-link.com" disabled={saving} />
-        </label>
-        <label>
           <span>Lookup CTA URL</span>
           <input value={form.lookupCtaUrl} onChange={(e) => updateField("lookupCtaUrl", e.target.value)} placeholder="https://sbl-donation-lookup.vercel.app/" disabled={saving} />
         </label>

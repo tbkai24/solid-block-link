@@ -9,13 +9,15 @@ type ProgressSectionProps = {
   donateCta: CtaLink;
   campaignTitle: string;
   milestone: MilestoneContent;
+  donateHref?: string;
 };
 
-export function ProgressSection({ progress, donateCta, campaignTitle, milestone }: ProgressSectionProps) {
+export function ProgressSection({ progress, donateCta, campaignTitle, milestone, donateHref }: ProgressSectionProps) {
   const [lastUpdatedLabel, setLastUpdatedLabel] = useState(() => formatViewerDateTime(new Date()));
   const internalDonorCount = progress.internalDonorCount ?? 0;
   const totalDonorCount = progress.donorCount + internalDonorCount;
   const amountNeeded = Math.max(progress.goal - progress.totalRaised, 0);
+  const resolvedDonateHref = donateHref || donateCta.href;
 
   useEffect(() => {
     setLastUpdatedLabel(formatViewerDateTime(new Date()));
@@ -38,7 +40,7 @@ export function ProgressSection({ progress, donateCta, campaignTitle, milestone 
           <p className="donation-total">{formatCurrency(progress.totalRaised)}</p>
           <p className="muted-text">Raised so far</p>
           <div className="cta-row">
-            <a className="button primary" href={donateCta.href} target="_blank" rel="noreferrer">
+            <a className="button primary" href={resolvedDonateHref} target="_blank" rel="noreferrer">
               <span className="button-icon" aria-hidden="true"><FiArrowRight /></span>
               {donateCta.label}
             </a>

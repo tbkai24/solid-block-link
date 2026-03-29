@@ -2,7 +2,6 @@ export type SiteSettingsFormData = {
   heroTitle: string;
   heroSummary: string;
   donateCtaLabel: string;
-  donateCtaUrl: string;
   lookupCtaLabel: string;
   lookupCtaUrl: string;
   logoUrl: string;

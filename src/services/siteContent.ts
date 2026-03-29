@@ -1,4 +1,4 @@
-import { getDonationSummary } from "./appsScript";
+import { getDonationSummary, getDonationSummaryForCampaign } from "./appsScript";
 import { siteContent as fallbackContent } from "../data/mockContent";
 import { formatCurrency } from "./format";
 import { hasSupabaseEnv, supabase } from "../lib/supabase";
@@ -43,12 +43,51 @@ function mergePartialContent(base: SiteContent, partial: Partial<SiteContent>): 
     milestone: partial.milestone ?? base.milestone,
     campaignMilestones: partial.campaignMilestones ?? base.campaignMilestones,
     currentCampaign: partial.currentCampaign ?? base.currentCampaign,
+    homepageCampaigns: partial.homepageCampaigns ?? base.homepageCampaigns,
     progress: partial.progress ?? base.progress,
     updates: partial.updates ?? base.updates,
     embeds: partial.embeds ?? base.embeds,
     pastCampaigns: partial.pastCampaigns ?? base.pastCampaigns,
     donateCta: partial.donateCta ?? base.donateCta,
     lookupCta: partial.lookupCta ?? base.lookupCta
+  };
+}
+
+function toCampaignItem(campaign: CampaignRow) {
+  return {
+    id: campaign.id,
+    title: campaign.title,
+    status: campaign.status,
+    summary: campaign.summary,
+    outcome: campaign.outcome,
+    donateUrl: campaign.donate_url,
+    sheetName: campaign.sheet_name,
+    homepageOrder: Number(campaign.homepage_order ?? 0)
+  };
+}
+
+function toHomepageCampaignItem(
+  campaign: CampaignRow,
+  milestoneRows: CampaignMilestoneRow[],
+  progress: SiteContent["progress"],
+  donationSummary: SummaryInput,
+  internalRows: InternalAdjustmentRow[] = []
+) {
+  return {
+    ...toCampaignItem(campaign),
+    progress,
+    milestone: {
+      title: progress.totalRaised > 0 ? `${formatCurrency(progress.totalRaised)} already raised for this campaign.` : "",
+      nextAmount: 0,
+      isVisible: progress.totalRaised > 0
+    },
+    campaignMilestones: toCampaignMilestones(
+      milestoneRows,
+      donationSummary,
+      internalRows,
+      getInternalDonationEntryCount(internalRows)
+    ),
+    milestoneCount: milestoneRows.length
   };
 }
 
@@ -237,8 +276,12 @@ function toContent(
       title: campaign.title,
       status: campaign.status,
       summary: campaign.summary,
-      outcome: campaign.outcome
+      outcome: campaign.outcome,
+      donateUrl: campaign.donate_url,
+      sheetName: campaign.sheet_name,
+      homepageOrder: Number(campaign.homepage_order ?? 0)
     },
+    homepageCampaigns: [],
     progress,
     updates: updates.map((item) => ({
       id: item.id,
@@ -271,9 +314,17 @@ export async function getSiteContent(): Promise<SiteContent> {
   const initialDonationSummary = await initialDonationSummaryPromise;
   if (!hasSupabaseEnv || !supabase) return withSummaryFallback(initialDonationSummary);
 
-  const [settingsRes, campaignRes, updatesRes, embedsRes, pastRes] = await Promise.all([
+  const [settingsRes, campaignsRes, updatesRes, embedsRes, pastRes] = await Promise.all([
     supabase.from("site_settings").select("*").limit(1).maybeSingle<SiteSettingsRow>(),
-    supabase.from("campaigns").select("*").eq("featured", true).eq("is_past", false).limit(1).maybeSingle<CampaignRow>(),
+    supabase
+      .from("campaigns")
+      .select("*")
+      .eq("featured", true)
+      .eq("is_past", false)
+      .order("homepage_order", { ascending: true })
+      .order("last_updated", { ascending: false })
+      .limit(4)
+      .returns<CampaignRow[]>(),
     supabase.from("updates").select("*").order("published_at", { ascending: false }).limit(8).returns<UpdateRow[]>(),
     supabase.from("embeds").select("*").eq("featured", true).order("display_order", { ascending: true }).limit(4).returns<EmbedRow[]>(),
     supabase.from("campaigns").select("*").eq("is_past", true).order("last_updated", { ascending: false }).limit(6).returns<CampaignRow[]>()
@@ -318,46 +369,58 @@ export async function getSiteContent(): Promise<SiteContent> {
     }));
   }
 
-  if (!campaignRes.error && campaignRes.data) {
-    const campaign = campaignRes.data;
-    const [milestoneRes, internalRows] = await Promise.all([
-      supabase
-        .from("campaign_milestones")
-        .select("*")
-        .eq("campaign_id", campaign.id)
-        .order("display_order", { ascending: true })
-        .returns<CampaignMilestoneRow[]>(),
-      fetchInternalAdjustmentRows(campaign.id)
-    ]);
-    const milestoneRows = !milestoneRes.error ? (milestoneRes.data ?? []) : [];
-    const donationSummaryPromise = getDonationSummary(
-      milestoneRows.map((item) => ({
-        milestoneId: item.id,
-        title: item.title,
-        rowStart: Number(item.row_start ?? 0),
-        rowEnd: Number(item.row_end ?? 0)
-      }))
-    ).catch(() => initialDonationSummaryPromise);
-    const donationSummary = await donationSummaryPromise;
-    const internalEntryCount = getInternalDonationEntryCount(internalRows);
-    const progress = toProgress(campaign, donationSummary, milestoneRows, internalEntryCount);
-    partial.currentCampaign = {
-      id: campaign.id,
-      title: campaign.title,
-      status: campaign.status,
-      summary: campaign.summary,
-      outcome: campaign.outcome
-    };
-    partial.progress = progress;
+  if (!campaignsRes.error && (campaignsRes.data ?? []).length) {
+    const featuredCampaigns = campaignsRes.data ?? [];
+    const featuredIds = featuredCampaigns.map((item) => item.id);
+    const milestoneRes = await supabase
+      .from("campaign_milestones")
+      .select("*")
+      .in("campaign_id", featuredIds)
+      .order("display_order", { ascending: true })
+      .returns<CampaignMilestoneRow[]>();
+    const allMilestoneRows = !milestoneRes.error ? (milestoneRes.data ?? []) : [];
+
+    const metricsByCampaign = await Promise.all(featuredCampaigns.map(async (campaign) => {
+      const milestoneRows = allMilestoneRows.filter((item) => item.campaign_id === campaign.id);
+      const [internalRows, donationSummary] = await Promise.all([
+        fetchInternalAdjustmentRows(campaign.id),
+        getDonationSummaryForCampaign(
+          milestoneRows.map((item) => ({
+            milestoneId: item.id,
+            title: item.title,
+            rowStart: Number(item.row_start ?? 0),
+            rowEnd: Number(item.row_end ?? 0)
+          })),
+          { sheetName: campaign.sheet_name }
+        ).catch(() => null)
+      ]);
+      const internalEntryCount = getInternalDonationEntryCount(internalRows);
+      const progress = toProgress(campaign, donationSummary, milestoneRows, internalEntryCount);
+
+      return {
+        campaign,
+        milestoneRows,
+        internalRows,
+        donationSummary,
+        progress
+      };
+    }));
+
+    const primary = metricsByCampaign[0];
+    partial.currentCampaign = toCampaignItem(primary.campaign);
+    partial.progress = primary.progress;
     partial.campaignMilestones = toCampaignMilestones(
-      milestoneRows,
-      donationSummary,
-      internalRows,
-      internalEntryCount
+      primary.milestoneRows,
+      primary.donationSummary,
+      primary.internalRows,
+      getInternalDonationEntryCount(primary.internalRows)
+    );
+    partial.homepageCampaigns = metricsByCampaign.map((item) =>
+      toHomepageCampaignItem(item.campaign, item.milestoneRows, item.progress, item.donationSummary, item.internalRows)
     );
 
     if (!settingsRes.error && settingsRes.data) {
-      Object.assign(partial, toSettingsPartial(settingsRes.data, progress.totalRaised));
+      Object.assign(partial, toSettingsPartial(settingsRes.data, primary.progress.totalRaised));
     }
 
     return mergePartialContent(base, partial);

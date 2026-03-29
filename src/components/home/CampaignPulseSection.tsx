@@ -95,7 +95,7 @@ export function CampaignPulseSection({ campaign, milestones, progress, updates }
           <strong>{latestUpdate ? latestUpdate.title : "Awaiting next update"}</strong>
           <p className="pulse-copy">
             {latestUpdate
-              ? `${latestUpdate.platform} • ${formatUpdateDate(latestUpdate.date)}`
+              ? `${latestUpdate.platform} - ${formatUpdateDate(latestUpdate.date)}`
               : "Social proof and update recaps will surface here as soon as they are published."}
           </p>
           <span className="pulse-link">

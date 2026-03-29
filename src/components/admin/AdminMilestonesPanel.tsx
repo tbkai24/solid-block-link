@@ -1,14 +1,18 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAdminAlert } from "../../hooks/useAdminAlert";
 import { supabase } from "../../lib/supabase";
-import { getDonationSummary } from "../../services/appsScript";
+import { getDonationSummaryForCampaign } from "../../services/appsScript";
 import { formatCurrency } from "../../services/format";
 import { invalidateSiteContentCache } from "../../services/siteContentCache";
-import { CampaignMilestoneRow } from "../../types/supabase";
+import { CampaignMilestoneRow, CampaignRow } from "../../types/supabase";
 
 type MilestoneForm = {
   campaignTitle: string;
   campaignDescription: string;
+  donateUrl: string;
+  sheetName: string;
+  homepageOrder: string;
+  featured: boolean;
   status: "Active" | "Completed";
 };
 
@@ -30,24 +34,51 @@ type MilestoneSnapshot = {
   donorCount: number;
 };
 
+type CampaignPreview = {
+  title: string;
+  description: string;
+  donateUrl: string;
+  sheetName: string;
+  homepageOrder: string;
+  featured: boolean;
+  status: "Active" | "Completed";
+  snapshot: MilestoneSnapshot;
+  milestoneRows: CampaignMilestoneRow[];
+};
+
 type CampaignOption = {
   id: string;
   title: string;
+  summary: string;
+  donateUrl: string;
+  status: "Active" | "Completed";
+  sheetName: string;
+  homepageOrder: number;
+  featured: boolean;
 };
 
 function getMilestoneTargetTotal(rows: CampaignMilestoneRow[]) {
   return rows.reduce((sum, row) => sum + Number(row.target_amount || 0), 0);
 }
 
+function createEmptyCampaignForm(): MilestoneForm {
+  return {
+    campaignTitle: "",
+    campaignDescription: "",
+    donateUrl: "",
+    sheetName: "",
+    homepageOrder: "1",
+    featured: true,
+    status: "Active"
+  };
+}
+
 export function AdminMilestonesPanel() {
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const rowTitleInputRef = useRef<HTMLInputElement | null>(null);
   const [campaignId, setCampaignId] = useState("");
-  const [form, setForm] = useState<MilestoneForm>({
-    campaignTitle: "",
-    campaignDescription: "",
-    status: "Active"
-  });
+  const [draftMode, setDraftMode] = useState(false);
+  const [form, setForm] = useState<MilestoneForm>(createEmptyCampaignForm());
   const [rowForm, setRowForm] = useState<MilestoneRowForm>({
     campaignId: "",
     title: "",
@@ -67,6 +98,7 @@ export function AdminMilestonesPanel() {
     totalRaised: 0,
     donorCount: 0
   });
+  const [savedPreview, setSavedPreview] = useState<CampaignPreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rowSaving, setRowSaving] = useState(false);
@@ -99,6 +131,33 @@ export function AdminMilestonesPanel() {
     };
   }
 
+  function applyCampaignToForm(campaign?: Partial<CampaignRow> | null) {
+    setForm({
+      campaignTitle: String(campaign?.title ?? ""),
+      campaignDescription: String(campaign?.summary ?? ""),
+      donateUrl: String(campaign?.donate_url ?? ""),
+      sheetName: String(campaign?.sheet_name ?? ""),
+      homepageOrder: String(Number(campaign?.homepage_order ?? 1) || 1),
+      featured: Boolean(campaign?.featured ?? true),
+      status: (campaign?.status as MilestoneForm["status"]) ?? "Active"
+    });
+  }
+
+  async function refreshSnapshot(nextCampaign?: Partial<CampaignRow> | null) {
+    const publicSummary = await getDonationSummaryForCampaign([], {
+      sheetName: String(nextCampaign?.sheet_name ?? "")
+    }).catch(() => null);
+    const publicRaised = publicSummary?.totalDonations ?? 0;
+    const internalRaised = Number(nextCampaign?.internal_amount ?? 0);
+
+    setSnapshot({
+      publicRaised,
+      internalRaised,
+      totalRaised: publicRaised + internalRaised,
+      donorCount: publicSummary?.donationEntries ?? publicSummary?.donorCount ?? 0
+    });
+  }
+
   async function loadCampaignOptions(preferredCampaignId = "") {
     if (!supabase) {
       setCampaignOptions([]);
@@ -107,15 +166,22 @@ export function AdminMilestonesPanel() {
 
     const { data, error } = await supabase
       .from("campaigns")
-      .select("id, title")
+      .select("id, title, summary, donate_url, status, sheet_name, homepage_order, featured")
       .order("featured", { ascending: false })
+      .order("homepage_order", { ascending: true })
       .order("last_updated", { ascending: false });
 
     if (error) throw error;
 
     const nextOptions = (data ?? []).map((item) => ({
       id: item.id as string,
-      title: (item.title as string) || "Untitled campaign"
+      title: (item.title as string) || "Untitled campaign",
+      summary: String(item.summary ?? ""),
+      donateUrl: String(item.donate_url ?? ""),
+      status: (item.status as CampaignOption["status"]) ?? "Active",
+      sheetName: String(item.sheet_name ?? ""),
+      homepageOrder: Number(item.homepage_order ?? 0),
+      featured: Boolean(item.featured ?? false)
     }));
 
     setCampaignOptions(nextOptions);
@@ -163,32 +229,66 @@ export function AdminMilestonesPanel() {
     setRowForm(buildNextRowForm(rowForm.campaignId || campaignId, milestoneRows));
   }
 
+  function startNewCampaignDraft() {
+    setDraftMode(true);
+    setForm(createEmptyCampaignForm());
+    setMilestoneRows([]);
+    setRowForm(buildNextRowForm("", []));
+    setEditingRowId("");
+    setSnapshot({
+      publicRaised: 0,
+      internalRaised: 0,
+      totalRaised: 0,
+      donorCount: 0
+    });
+  }
+
+  async function loadCampaign(nextCampaignId: string) {
+    if (!supabase || !nextCampaignId) {
+      startNewCampaignDraft();
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("campaigns")
+      .select("*")
+      .eq("id", nextCampaignId)
+      .maybeSingle<CampaignRow>();
+
+    if (error) throw error;
+    if (!data) return;
+
+    setDraftMode(false);
+    setCampaignId(data.id);
+    applyCampaignToForm(data);
+    await loadMilestoneRows(data.id);
+    await refreshSnapshot(data);
+    window.requestAnimationFrame(() => {
+      titleInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      titleInputRef.current?.focus();
+    });
+  }
+
   useEffect(() => {
     async function load() {
       try {
-        const [campaignRes, donationSummary] = await Promise.all([
-          supabase?.from("campaigns").select("id, title, summary, internal_amount, status").eq("featured", true).eq("is_past", false).limit(1).maybeSingle(),
-          getDonationSummary().catch(() => null)
-        ]);
+        const campaignRes = await supabase
+          ?.from("campaigns")
+          .select("*")
+          .eq("featured", true)
+          .eq("is_past", false)
+          .order("homepage_order", { ascending: true })
+          .order("last_updated", { ascending: false })
+          .limit(1)
+          .maybeSingle<CampaignRow>();
 
-        const publicRaised = donationSummary?.totalDonations ?? 0;
-        const internalRaised = Number(campaignRes?.data?.internal_amount ?? 0);
         const nextCampaignId = campaignRes?.data?.id ?? "";
-
-        setCampaignId(nextCampaignId);
-        setForm({
-          campaignTitle: campaignRes?.data?.title ?? "",
-          campaignDescription: campaignRes?.data?.summary ?? "",
-          status: campaignRes?.data?.status ?? "Active"
-        });
         await loadCampaignOptions(nextCampaignId);
-        await loadMilestoneRows(nextCampaignId);
-        setSnapshot({
-          publicRaised,
-          internalRaised,
-          totalRaised: publicRaised + internalRaised,
-          donorCount: donationSummary?.donorCount ?? 0
-        });
+        if (nextCampaignId) {
+          await loadCampaign(nextCampaignId);
+        } else {
+          startNewCampaignDraft();
+        }
       } catch (error) {
         showCampaignAlert("danger", error instanceof Error ? error.message : "Failed to load milestone settings.");
       } finally {
@@ -199,63 +299,66 @@ export function AdminMilestonesPanel() {
     void load();
   }, [showCampaignAlert]);
 
+  useEffect(() => {
+    if (!campaignId || draftMode) return;
+
+    setSavedPreview({
+      title: form.campaignTitle,
+      description: form.campaignDescription,
+      donateUrl: form.donateUrl,
+      sheetName: form.sheetName,
+      homepageOrder: form.homepageOrder,
+      featured: form.featured,
+      status: form.status,
+      snapshot,
+      milestoneRows
+    });
+  }, [campaignId, draftMode, form, snapshot, milestoneRows]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!supabase) return showCampaignAlert("danger", "Supabase is not configured.");
     if (!form.campaignTitle.trim()) return showCampaignAlert("warning", "Active campaign title is required.");
+    if (!form.sheetName.trim()) return showCampaignAlert("warning", "Sheet tab name is required.");
 
     setSaving(true);
     try {
-      let nextCampaignId =
-        campaignId ||
-        (
-          await supabase
-            .from("campaigns")
-            .select("id")
-            .eq("featured", true)
-            .eq("is_past", false)
-            .limit(1)
-            .maybeSingle()
-        ).data?.id ||
-        "";
+      let nextCampaignId = draftMode ? "" : campaignId;
+
+      const payload = {
+        title: form.campaignTitle.trim(),
+        summary: form.campaignDescription.trim(),
+        donate_url: form.donateUrl.trim(),
+        status: form.status,
+        sheet_name: form.sheetName.trim(),
+        homepage_order: Math.max(1, Number(form.homepageOrder || 1)),
+        featured: form.featured,
+        is_past: false,
+        outcome: ""
+      };
 
       if (nextCampaignId) {
         const { error } = await supabase
           .from("campaigns")
-          .update({
-            title: form.campaignTitle.trim(),
-            summary: form.campaignDescription.trim(),
-            status: form.status
-          })
+          .update(payload)
           .eq("id", nextCampaignId);
         if (error) throw error;
       } else {
         const { data, error } = await supabase
           .from("campaigns")
-          .insert({
-            title: form.campaignTitle.trim(),
-            summary: form.campaignDescription.trim(),
-            status: form.status,
-            outcome: "",
-            featured: true,
-            is_past: false
-          })
+          .insert(payload)
           .select("id")
           .single();
         if (error) throw error;
         nextCampaignId = data.id;
       }
 
-      setCampaignId(nextCampaignId);
       await loadCampaignOptions(nextCampaignId);
-      setRowForm((current) => ({
-        ...buildNextRowForm(nextCampaignId, milestoneRows),
-        campaignId: current.campaignId || nextCampaignId
-      }));
+      await loadCampaign(nextCampaignId);
       invalidateSiteContentCache();
-      showCampaignAlert("success", "Milestone campaign saved.");
+      showCampaignAlert("success", draftMode || !campaignId ? "Campaign created." : "Campaign updated.");
     } catch (error) {
-      showCampaignAlert("danger", error instanceof Error ? error.message : "Milestone save failed.");
+      showCampaignAlert("danger", error instanceof Error ? error.message : "Campaign save failed.");
     } finally {
       setSaving(false);
     }
@@ -332,28 +435,29 @@ export function AdminMilestonesPanel() {
 
   async function handleDelete() {
     if (!supabase) return showCampaignAlert("danger", "Supabase is not configured.");
-    if (!campaignId) return showCampaignAlert("warning", "No active milestone entry to delete.");
-    const confirmed = window.confirm("Delete this milestone campaign?");
+    if (!campaignId) return showCampaignAlert("warning", "No campaign selected.");
+    const confirmed = window.confirm("Delete this campaign and its milestone buckets?");
     if (!confirmed) return;
 
     setSaving(true);
     try {
       const { error } = await supabase
         .from("campaigns")
-        .update({ title: "", summary: "", status: "Active" })
+        .delete()
         .eq("id", campaignId);
       if (error) throw error;
 
-      setForm({ campaignTitle: "", campaignDescription: "", status: "Active" });
-      setCampaignId("");
-      setCampaignOptions([]);
-      setMilestoneRows([]);
-      setRowForm({ campaignId: "", title: "Milestone 1", targetAmount: "", rowStart: "", rowEnd: "", displayOrder: "1", status: "Active", note: "" });
-      setEditingRowId("");
+      const fallbackCampaignId = campaignOptions.find((option) => option.id !== campaignId)?.id ?? "";
+      await loadCampaignOptions(fallbackCampaignId);
+      if (fallbackCampaignId) {
+        await loadCampaign(fallbackCampaignId);
+      } else {
+        startNewCampaignDraft();
+      }
       invalidateSiteContentCache();
-      showCampaignAlert("success", "Milestone campaign cleared.");
+      showCampaignAlert("success", "Campaign deleted.");
     } catch (error) {
-      showCampaignAlert("danger", error instanceof Error ? error.message : "Delete milestone failed.");
+      showCampaignAlert("danger", error instanceof Error ? error.message : "Delete campaign failed.");
     } finally {
       setSaving(false);
     }
@@ -384,16 +488,54 @@ export function AdminMilestonesPanel() {
     }
   }
 
+  const summaryForm = draftMode && savedPreview
+    ? {
+        campaignTitle: savedPreview.title,
+        campaignDescription: savedPreview.description,
+        donateUrl: savedPreview.donateUrl,
+        sheetName: savedPreview.sheetName,
+        homepageOrder: savedPreview.homepageOrder,
+        featured: savedPreview.featured,
+        status: savedPreview.status
+      }
+    : form;
+  const summaryRows = draftMode && savedPreview ? savedPreview.milestoneRows : milestoneRows;
+  const summarySnapshot = draftMode && savedPreview ? savedPreview.snapshot : snapshot;
+  const visibleMilestoneRows = draftMode && savedPreview ? savedPreview.milestoneRows : milestoneRows;
+
   return (
     <section className="admin-panel">
       <p className="eyebrow">Milestone</p>
       <h2>Campaign Milestones</h2>
-      <p className="muted-text">Set the active campaign first, then define milestone stages with their own targets and assigned contribution ranges.</p>
+      <p className="muted-text">Manage each campaign with its own sheet tab, homepage order, and milestone buckets.</p>
+      {draftMode ? <p className="muted-text">Drafting a new campaign. The saved campaign preview stays visible below until you save the new one.</p> : null}
       {campaignMessage ? <p className={`admin-alert ${campaignTone}`}>{campaignMessage}</p> : null}
 
       <form className="admin-settings-form" onSubmit={handleSubmit}>
         <label>
-          <span>Active Campaign Title</span>
+          <span>Campaign</span>
+          <select
+            value={draftMode ? "__new__" : campaignId}
+            onChange={(e) => {
+              const nextCampaignId = e.target.value;
+              if (nextCampaignId === "__new__") {
+                startNewCampaignDraft();
+                return;
+              }
+              void loadCampaign(nextCampaignId);
+            }}
+            disabled={saving}
+          >
+            <option value="__new__">New campaign</option>
+            {campaignOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Campaign Title</span>
           <input ref={titleInputRef} value={form.campaignTitle} onChange={(e) => setForm((current) => ({ ...current, campaignTitle: e.target.value }))} placeholder="Worldwide Promo Push" disabled={saving} />
         </label>
         <label>
@@ -406,15 +548,63 @@ export function AdminMilestonesPanel() {
           />
         </label>
         <label>
+          <span>Campaign Donate URL</span>
+          <input
+            value={form.donateUrl}
+            onChange={(e) => setForm((current) => ({ ...current, donateUrl: e.target.value }))}
+            placeholder="https://docs.google.com/forms/..."
+            disabled={saving}
+          />
+        </label>
+        <label>
+          <span>Sheet Tab Name</span>
+          <input
+            value={form.sheetName}
+            onChange={(e) => setForm((current) => ({ ...current, sheetName: e.target.value }))}
+            placeholder="Breakout Marketing WAS"
+            disabled={saving}
+          />
+        </label>
+        <label>
+          <span>Homepage Order</span>
+          <input
+            type="number"
+            min="1"
+            value={form.homepageOrder}
+            onChange={(e) => setForm((current) => ({ ...current, homepageOrder: e.target.value }))}
+            placeholder="1"
+            disabled={saving}
+          />
+        </label>
+        <label className="admin-checkbox">
+          <input
+            type="checkbox"
+            checked={form.featured}
+            onChange={(e) => setForm((current) => ({ ...current, featured: e.target.checked }))}
+            disabled={saving}
+          />
+          <span>Show on homepage</span>
+        </label>
+        <label>
           <span>Status</span>
           <select value={form.status} onChange={(e) => setForm((current) => ({ ...current, status: e.target.value as MilestoneForm["status"] }))} disabled={saving}>
             <option value="Active">Active</option>
             <option value="Completed">Completed</option>
           </select>
         </label>
-        <button className="lookup-button" type="submit" disabled={saving}>
-          {saving ? "Saving..." : campaignId ? "Update Milestone" : "Save Milestone"}
-        </button>
+        <div className="admin-table-actions">
+          <button className="lookup-button" type="submit" disabled={saving}>
+            {saving ? "Saving..." : campaignId ? "Update Campaign" : "Create Campaign"}
+          </button>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={startNewCampaignDraft}
+            disabled={saving}
+          >
+            New Campaign
+          </button>
+        </div>
       </form>
 
       <div className="admin-summary-table-wrap">
@@ -423,35 +613,72 @@ export function AdminMilestonesPanel() {
             <tr>
               <th>Title</th>
               <th>Description</th>
-              <th>Combined Target</th>
-              <th>Total Raised</th>
-              <th>Progress</th>
+              <th>Donate URL</th>
+              <th>Sheet</th>
+              <th>Homepage</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
+            {campaignOptions.length ? campaignOptions.map((option) => (
+              <tr key={option.id}>
+                <td>{option.title || "Untitled campaign"}{option.id === campaignId && !draftMode ? " (Selected)" : ""}</td>
+                <td>{option.summary || "Not set"}</td>
+                <td>{option.donateUrl || "Not set"}</td>
+                <td>{option.sheetName || "Not set"}</td>
+                <td>{option.featured ? `Yes • #${option.homepageOrder || 1}` : "Hidden"}</td>
+                <td>{option.status}</td>
+                <td>
+                  <div className="admin-table-actions">
+                    <button
+                      className="admin-inline-button"
+                      type="button"
+                      onClick={() => void loadCampaign(option.id)}
+                    >
+                      Edit
+                    </button>
+                    {option.id === campaignId && !draftMode ? (
+                      <button className="admin-inline-button danger" type="button" onClick={() => void handleDelete()} disabled={saving}>
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan={7}>No campaigns saved yet.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="admin-summary-table-wrap">
+        <table className="admin-summary-table">
+          <thead>
             <tr>
-              <td>{form.campaignTitle || "Not set"}</td>
-              <td>{form.campaignDescription || "Not set"}</td>
-              <td>{formatCurrency(getMilestoneTargetTotal(milestoneRows))}</td>
-              <td>{formatCurrency(snapshot.totalRaised)}</td>
+              <th>Selected Campaign</th>
+              <th>Donate URL</th>
+              <th>Combined Target</th>
+              <th>Total Raised</th>
+              <th>Progress</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{summaryForm.campaignTitle || "Draft campaign"}</td>
+              <td>{summaryForm.donateUrl || "Not set"}</td>
+              <td>{formatCurrency(getMilestoneTargetTotal(summaryRows))}</td>
+              <td>{formatCurrency(summarySnapshot.totalRaised)}</td>
               <td>
-                {getMilestoneTargetTotal(milestoneRows) > 0
-                  ? `${Math.min(Math.round((snapshot.totalRaised / getMilestoneTargetTotal(milestoneRows)) * 100), 100)}%`
+                {getMilestoneTargetTotal(summaryRows) > 0
+                  ? `${Math.min(Math.round((summarySnapshot.totalRaised / getMilestoneTargetTotal(summaryRows)) * 100), 100)}%`
                   : "0%"}
               </td>
-              <td>{form.status}</td>
-              <td>
-                <div className="admin-table-actions">
-                  <button className="admin-inline-button" type="button" onClick={handleEdit}>
-                    Edit
-                  </button>
-                  <button className="admin-inline-button danger" type="button" onClick={() => void handleDelete()} disabled={saving}>
-                    Delete
-                  </button>
-                </div>
-              </td>
+              <td>{summaryForm.status}</td>
             </tr>
           </tbody>
         </table>
@@ -532,14 +759,14 @@ export function AdminMilestonesPanel() {
                 <th>Title</th>
                 <th>Campaign</th>
                 <th>Target</th>
-                <th>Rows</th>
+                <th>Sheet Rows</th>
                 <th>Order</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {milestoneRows.length ? milestoneRows.map((row) => (
+              {visibleMilestoneRows.length ? visibleMilestoneRows.map((row) => (
                 <tr key={row.id}>
                   <td>{row.title}</td>
                   <td>{campaignOptions.find((option) => option.id === row.campaign_id)?.title ?? "Campaign"}</td>
@@ -549,10 +776,10 @@ export function AdminMilestonesPanel() {
                   <td>{row.status}</td>
                   <td>
                     <div className="admin-table-actions">
-                      <button className="admin-inline-button" type="button" onClick={() => handleRowEdit(row)}>
+                      <button className="admin-inline-button" type="button" onClick={() => handleRowEdit(row)} disabled={draftMode}>
                         Edit
                       </button>
-                      <button className="admin-inline-button danger" type="button" onClick={() => void handleRowDelete(row.id)} disabled={rowSaving}>
+                      <button className="admin-inline-button danger" type="button" onClick={() => void handleRowDelete(row.id)} disabled={rowSaving || draftMode}>
                         Delete
                       </button>
                     </div>

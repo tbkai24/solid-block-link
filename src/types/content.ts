@@ -38,6 +38,16 @@ export type CampaignItem = {
   status: "Active" | "Completed";
   summary: string;
   outcome: string;
+  donateUrl?: string;
+  sheetName?: string;
+  homepageOrder?: number;
+};
+
+export type HomepageCampaignItem = CampaignItem & {
+  progress: ProgressStats;
+  milestone: MilestoneContent;
+  campaignMilestones: CampaignMilestoneItem[];
+  milestoneCount: number;
 };
 
 export type AboutContent = {
@@ -86,6 +96,7 @@ export type SiteContent = {
   milestone: MilestoneContent;
   campaignMilestones: CampaignMilestoneItem[];
   currentCampaign: CampaignItem;
+  homepageCampaigns: HomepageCampaignItem[];
   progress: ProgressStats;
   updates: UpdateItem[];
   embeds: EmbedItem[];
@@ -96,4 +107,10 @@ export type SiteMetricsPayload = {
   progress: ProgressStats;
   campaignMilestones: Array<Pick<CampaignMilestoneItem, "id" | "raisedAmount" | "donorCount" | "percent">>;
   milestone: MilestoneContent;
+  homepageCampaigns: Array<{
+    id: string;
+    progress: ProgressStats;
+    milestone: MilestoneContent;
+    campaignMilestones: Array<Pick<CampaignMilestoneItem, "id" | "raisedAmount" | "donorCount" | "percent">>;
+  }>;
 };

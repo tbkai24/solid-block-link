@@ -167,7 +167,18 @@ export async function getPublicSiteMetrics(): Promise<SiteMetricsPayload> {
         donorCount: item.donorCount,
         percent: item.percent
       })),
-      milestone: content.milestone
+      milestone: content.milestone,
+      homepageCampaigns: content.homepageCampaigns.map((item) => ({
+        id: item.id,
+        progress: item.progress,
+        milestone: item.milestone,
+        campaignMilestones: item.campaignMilestones.map((milestoneItem) => ({
+          id: milestoneItem.id,
+          raisedAmount: milestoneItem.raisedAmount,
+          donorCount: milestoneItem.donorCount,
+          percent: milestoneItem.percent
+        }))
+      }))
     };
   }
 
@@ -188,7 +199,18 @@ export async function getPublicSiteMetrics(): Promise<SiteMetricsPayload> {
         donorCount: item.donorCount,
         percent: item.percent
       })),
-      milestone: content.milestone
+      milestone: content.milestone,
+      homepageCampaigns: content.homepageCampaigns.map((item) => ({
+        id: item.id,
+        progress: item.progress,
+        milestone: item.milestone,
+        campaignMilestones: item.campaignMilestones.map((milestoneItem) => ({
+          id: milestoneItem.id,
+          raisedAmount: milestoneItem.raisedAmount,
+          donorCount: milestoneItem.donorCount,
+          percent: milestoneItem.percent
+        }))
+      }))
     };
   }
 }

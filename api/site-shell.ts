@@ -50,8 +50,11 @@ function createEmptyContent() {
       title: "",
       status: "Active",
       summary: "",
-      outcome: ""
+      outcome: "",
+      sheetName: "",
+      homepageOrder: 0
     },
+    homepageCampaigns: [],
     progress: {
       totalRaised: 0,
       publicRaised: 0,
@@ -65,6 +68,41 @@ function createEmptyContent() {
     updates: [],
     embeds: [],
     pastCampaigns: []
+  };
+}
+
+function toShellCampaignMilestones(rows: any[] = []) {
+  return (rows ?? []).map((item: any) => ({
+    id: item.id,
+    title: item.title,
+    targetAmount: Number(item.target_amount ?? 0),
+    rowStart: Number(item.row_start ?? 0),
+    rowEnd: Number(item.row_end ?? 0),
+    status: item.status ?? "Active",
+    displayOrder: Number(item.display_order ?? 0),
+    raisedAmount: 0,
+    donorCount: 0,
+    percent: 0,
+    note: item.note ?? ""
+  }));
+}
+
+function toHomepageCampaign(campaign: any, milestoneRows: any[] = []) {
+  const progress = toShellProgress(campaign, milestoneRows);
+
+  return {
+    id: campaign?.id ?? "",
+    title: campaign?.title ?? "",
+    status: campaign?.status ?? "Active",
+    summary: campaign?.summary ?? "",
+    outcome: campaign?.outcome ?? "",
+    donateUrl: campaign?.donate_url ?? "",
+    sheetName: campaign?.sheet_name ?? "",
+    homepageOrder: Number(campaign?.homepage_order ?? 0),
+    progress,
+    milestone: toShellMilestone(progress.totalRaised),
+    campaignMilestones: toShellCampaignMilestones(milestoneRows),
+    milestoneCount: milestoneRows.length
   };
 }
 
@@ -113,21 +151,25 @@ export default async function handler(_req: any, res: any) {
       return res.status(200).json(base);
     }
 
-    const [settingsRes, campaignRes, updatesRes, embedsRes, pastRes] = await Promise.all([
+    const [settingsRes, campaignsRes, updatesRes, embedsRes, pastRes] = await Promise.all([
       supabase.from("site_settings").select("*").limit(1).maybeSingle(),
-      supabase.from("campaigns").select("*").eq("featured", true).eq("is_past", false).limit(1).maybeSingle(),
+      supabase.from("campaigns").select("*").eq("featured", true).eq("is_past", false).order("homepage_order", { ascending: true }).order("last_updated", { ascending: false }).limit(4),
       supabase.from("updates").select("*").order("published_at", { ascending: false }).limit(8),
       supabase.from("embeds").select("*").eq("featured", true).order("display_order", { ascending: true }).limit(4),
       supabase.from("campaigns").select("*").eq("is_past", true).order("last_updated", { ascending: false }).limit(6)
     ]);
 
     const settings = settingsRes.data;
-    const campaign = campaignRes.data;
-    const milestoneRes = campaign?.id
-      ? await supabase.from("campaign_milestones").select("*").eq("campaign_id", campaign.id).order("display_order", { ascending: true })
+    const featuredCampaigns = campaignsRes.data ?? [];
+    const currentCampaignRow = featuredCampaigns[0] ?? null;
+    const milestoneRes = featuredCampaigns.length
+      ? await supabase.from("campaign_milestones").select("*").in("campaign_id", featuredCampaigns.map((item: any) => item.id)).order("display_order", { ascending: true })
       : { data: [], error: null };
-    const milestoneRows = milestoneRes.data ?? [];
-    const progress = toShellProgress(campaign, milestoneRows);
+    const allMilestoneRows = milestoneRes.data ?? [];
+    const currentMilestoneRows = currentCampaignRow
+      ? allMilestoneRows.filter((item: any) => item.campaign_id === currentCampaignRow.id)
+      : [];
+    const progress = toShellProgress(currentCampaignRow, currentMilestoneRows);
 
     return res.status(200).json({
       ...base,
@@ -156,26 +198,21 @@ export default async function handler(_req: any, res: any) {
         summary: settings?.footer_summary ?? ""
       },
       milestone: toShellMilestone(progress.totalRaised),
-      campaignMilestones: milestoneRows.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        targetAmount: Number(item.target_amount ?? 0),
-        rowStart: Number(item.row_start ?? 0),
-        rowEnd: Number(item.row_end ?? 0),
-        status: item.status ?? "Active",
-        displayOrder: Number(item.display_order ?? 0),
-        raisedAmount: 0,
-        donorCount: 0,
-        percent: 0,
-        note: item.note ?? ""
-      })),
+      campaignMilestones: toShellCampaignMilestones(currentMilestoneRows),
       currentCampaign: {
-        id: campaign?.id ?? "",
-        title: campaign?.title ?? "",
-        status: campaign?.status ?? "Active",
-        summary: campaign?.summary ?? "",
-        outcome: campaign?.outcome ?? ""
+        id: currentCampaignRow?.id ?? "",
+        title: currentCampaignRow?.title ?? "",
+        status: currentCampaignRow?.status ?? "Active",
+        summary: currentCampaignRow?.summary ?? "",
+        outcome: currentCampaignRow?.outcome ?? "",
+        donateUrl: currentCampaignRow?.donate_url ?? "",
+        sheetName: currentCampaignRow?.sheet_name ?? "",
+        homepageOrder: Number(currentCampaignRow?.homepage_order ?? 0)
       },
+      homepageCampaigns: featuredCampaigns.map((campaign: any) => {
+        const rows = allMilestoneRows.filter((item: any) => item.campaign_id === campaign.id);
+        return toHomepageCampaign(campaign, rows);
+      }),
       progress,
       updates: (updatesRes.data ?? []).map((item: any) => ({
         id: item.id,

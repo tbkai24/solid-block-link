@@ -27,6 +27,9 @@ export type CampaignRow = {
   summary: string;
   status: "Active" | "Completed";
   outcome: string;
+  donate_url: string;
+  sheet_name: string;
+  homepage_order: number;
   goal_amount: number;
   internal_amount: number;
   public_amount: number;

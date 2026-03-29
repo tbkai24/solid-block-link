@@ -16,12 +16,23 @@ function createTimeoutController(timeoutMs: number) {
 }
 
 export async function getDonationSummary(milestones: DonationSummaryMilestoneInput[] = []) {
+  return getDonationSummaryForCampaign(milestones);
+}
+
+export async function getDonationSummaryForCampaign(
+  milestones: DonationSummaryMilestoneInput[] = [],
+  options?: { sheetName?: string }
+) {
   if (!appsScriptUrl) return null;
 
   const query = new URLSearchParams({ action: "summary" });
 
   if (milestones.length) {
     query.set("milestones", JSON.stringify(milestones));
+  }
+
+  if (options?.sheetName?.trim()) {
+    query.set("sheetName", options.sheetName.trim());
   }
 
   const request = createTimeoutController(APPS_SCRIPT_TIMEOUT_MS);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { EmbedItem, UpdateItem } from "../../types/content";
 import { SocialEmbedCard } from "../shared/SocialEmbedCard";
@@ -21,6 +21,10 @@ export function PostsPreviewSection({ updates, embeds }: PostsPreviewSectionProp
   const pageCount = Math.max(1, Math.ceil(items.length / FEATURED_PAGE_SIZE));
   const visibleFeatured = featuredUpdates.slice(activePage * FEATURED_PAGE_SIZE, activePage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE);
   const visibleEmbeds = safeEmbeds.slice(activePage * FEATURED_PAGE_SIZE, activePage * FEATURED_PAGE_SIZE + FEATURED_PAGE_SIZE);
+
+  useEffect(() => {
+    setActivePage((current) => Math.min(current, Math.max(pageCount - 1, 0)));
+  }, [pageCount]);
 
   function move(direction: "prev" | "next") {
     if (pageCount <= 1) return;

@@ -1,8 +1,10 @@
 import { FiArrowRight, FiSearch } from "react-icons/fi";
-import { SiteContent } from "../../types/content";
+import { CampaignItem, SiteContent } from "../../types/content";
 
 type HeroSectionProps = {
   content: SiteContent;
+  campaign?: CampaignItem;
+  donateHref?: string;
 };
 
 function renderHeroTitle(title: string) {
@@ -26,9 +28,11 @@ function renderHeroTitle(title: string) {
   );
 }
 
-export function HeroSection({ content }: HeroSectionProps) {
+export function HeroSection({ content, campaign, donateHref }: HeroSectionProps) {
   const { heroTitle, heroSummary, donateCta, lookupCta, currentCampaign } = content;
-  const campaignSummary = currentCampaign.summary.trim();
+  const visibleCampaign = campaign ?? currentCampaign;
+  const campaignSummary = visibleCampaign.summary.trim();
+  const resolvedDonateHref = donateHref || visibleCampaign.donateUrl || donateCta.href;
 
   return (
     <section className="hero-panel">
@@ -37,7 +41,7 @@ export function HeroSection({ content }: HeroSectionProps) {
         <h1>{renderHeroTitle(heroTitle)}</h1>
         <p>{heroSummary}</p>
         <div className="cta-row">
-          <a className="button primary" href={donateCta.href} target="_blank" rel="noreferrer">
+          <a className="button primary" href={resolvedDonateHref} target="_blank" rel="noreferrer">
             <span className="button-icon" aria-hidden="true"><FiArrowRight /></span>
             {donateCta.label}
           </a>
@@ -49,7 +53,7 @@ export function HeroSection({ content }: HeroSectionProps) {
       </div>
       <div className="hero-card">
         <p className="hero-card-label">Active campaign</p>
-        <h2>{currentCampaign.title}</h2>
+        <h2>{visibleCampaign.title}</h2>
         {campaignSummary ? <p>{campaignSummary}</p> : null}
       </div>
     </section>
