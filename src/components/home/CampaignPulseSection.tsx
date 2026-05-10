@@ -11,10 +11,22 @@ type CampaignPulseSectionProps = {
   updates: UpdateItem[];
 };
 
+
 function getMilestoneState(item: CampaignMilestoneItem) {
   const normalizedStatus = String(item.status ?? "").trim().toLowerCase();
+  
   if (item.targetAmount > 0 && item.raisedAmount >= item.targetAmount) return "Achieved";
-  return normalizedStatus === "completed" || normalizedStatus === "achieved" ? "Achieved" : "Ongoing";
+  
+
+  if (normalizedStatus === "completed" || normalizedStatus === "achieved") {
+    return "/ 2. Achieved";
+  }
+
+  if (normalizedStatus === "not achieved") {
+    return "Not Achieved";
+  }
+
+  return "Ongoing";
 }
 
 function formatUpdateDate(value: string) {

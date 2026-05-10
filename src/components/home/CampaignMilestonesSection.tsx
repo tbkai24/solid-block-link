@@ -10,11 +10,23 @@ type CampaignMilestonesSectionProps = {
 
 export function CampaignMilestonesSection({ milestones, compact = false }: CampaignMilestonesSectionProps) {
   const safeMilestones = Array.isArray(milestones) ? milestones : [];
-  const getMilestoneBadge = (status?: string, raisedAmount = 0, targetAmount = 0) => {
-    if (targetAmount > 0 && raisedAmount >= targetAmount) return "Achieved";
-    const normalizedStatus = String(status ?? "").trim().toLowerCase();
-    return normalizedStatus === "completed" || normalizedStatus === "achieved" ? "Achieved" : "Ongoing";
-  };
+// In CampaignMilestonesSection.tsx
+
+const getMilestoneBadge = (status?: string, raisedAmount = 0, targetAmount = 0) => {
+  
+  if (targetAmount > 0 && raisedAmount >= targetAmount) return "Achieved";
+  
+  const normalizedStatus = String(status ?? "").trim().toLowerCase();
+  if (normalizedStatus === "completed" || normalizedStatus === "achieved") {
+    return "Achieved";
+  }
+
+  if (normalizedStatus === "not achieved") {
+    return "Not Achieved";
+  }
+
+  return "Ongoing";
+};
   const sortedMilestones = [...safeMilestones].sort((left, right) => {
     const leftBadge = getMilestoneBadge(left.status, left.raisedAmount, left.targetAmount);
     const rightBadge = getMilestoneBadge(right.status, right.raisedAmount, right.targetAmount);
