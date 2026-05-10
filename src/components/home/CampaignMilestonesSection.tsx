@@ -27,14 +27,21 @@ const getMilestoneBadge = (status?: string, raisedAmount = 0, targetAmount = 0) 
 
   return "Ongoing";
 };
+  // In CampaignMilestonesSection.tsx
+
   const sortedMilestones = [...safeMilestones].sort((left, right) => {
     const leftBadge = getMilestoneBadge(left.status, left.raisedAmount, left.targetAmount);
     const rightBadge = getMilestoneBadge(right.status, right.raisedAmount, right.targetAmount);
 
-    if (leftBadge !== rightBadge) {
-      return leftBadge === "Ongoing" ? -1 : 1;
+
+    const isLeftPriority = leftBadge === "Ongoing" || leftBadge === "Not Achieved";
+    const isRightPriority = rightBadge === "Ongoing" || rightBadge === "Not Achieved";
+
+    if (isLeftPriority !== isRightPriority) {
+      return isLeftPriority ? -1 : 1;
     }
 
+  
     return (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
   });
   const visibleMilestones = compact ? sortedMilestones.slice(0, 2) : sortedMilestones;

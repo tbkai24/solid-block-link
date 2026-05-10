@@ -50,14 +50,19 @@ export function CampaignPulseSection({ campaign, milestones, progress, updates }
   const sortedMilestones = [...safeMilestones].sort((left, right) => {
     const leftState = getMilestoneState(left);
     const rightState = getMilestoneState(right);
+ const isLeftPriority = leftState === "Ongoing" || leftState === "Not Achieved";
+    const isRightPriority = rightState === "Ongoing" || rightState === "Not Achieved";
 
-    if (leftState !== rightState) {
-      return leftState === "Ongoing" ? -1 : 1;
+
+    if (isLeftPriority !== isRightPriority) {
+      return isLeftPriority ? -1 : 1;
     }
 
     return (left.displayOrder ?? 0) - (right.displayOrder ?? 0);
   });
-  const currentMilestone = sortedMilestones.find((item) => getMilestoneState(item) === "Ongoing") ?? sortedMilestones[0];
+ const currentMilestone = sortedMilestones.find(
+    (item) => getMilestoneState(item) === "Ongoing" || getMilestoneState(item) === "Not Achieved"
+  ) ?? sortedMilestones[0];
   const remaining = Math.max(progress.goal - progress.totalRaised, 0);
   const milestoneRemaining = currentMilestone
     ? Math.max(currentMilestone.targetAmount - currentMilestone.raisedAmount, 0)
