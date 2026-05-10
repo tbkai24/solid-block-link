@@ -1270,3 +1270,13 @@ a { color: inherit; text-decoration: none; }
     padding: 18px;
   }
 }
+
+
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: var(--panel-soft);
+  color: var(--text);
+}

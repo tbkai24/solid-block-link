@@ -13,7 +13,7 @@ type MilestoneForm = {
   sheetName: string;
   homepageOrder: string;
   featured: boolean;
-  status: "Active" | "Completed";
+  status: "Active" | "Completed" | "Not Achieved";
 };
 
 type MilestoneRowForm = {
@@ -23,7 +23,7 @@ type MilestoneRowForm = {
   rowStart: string;
   rowEnd: string;
   displayOrder: string;
-  status: "Active" | "Completed";
+  status: "Active" | "Completed" | "Not Achieved";
   note: string;
 };
 
@@ -41,7 +41,7 @@ type CampaignPreview = {
   sheetName: string;
   homepageOrder: string;
   featured: boolean;
-  status: "Active" | "Completed";
+  status: "Active" | "Completed" | "Not Achieved";
   snapshot: MilestoneSnapshot;
   milestoneRows: CampaignMilestoneRow[];
 };
@@ -51,7 +51,7 @@ type CampaignOption = {
   title: string;
   summary: string;
   donateUrl: string;
-  status: "Active" | "Completed";
+  status: "Active" | "Completed" | "Not Achieved";
   sheetName: string;
   homepageOrder: number;
   featured: boolean;
@@ -590,6 +590,7 @@ export function AdminMilestonesPanel() {
           <select value={form.status} onChange={(e) => setForm((current) => ({ ...current, status: e.target.value as MilestoneForm["status"] }))} disabled={saving}>
             <option value="Active">Active</option>
             <option value="Completed">Completed</option>
+            <option value="Not Achieved">Not Achieved</option>
           </select>
         </label>
         <div className="admin-table-actions">
@@ -734,6 +735,7 @@ export function AdminMilestonesPanel() {
             <select value={rowForm.status} onChange={(e) => setRowForm((current) => ({ ...current, status: e.target.value as MilestoneRowForm["status"] }))} disabled={rowSaving}>
               <option value="Active">Active</option>
               <option value="Completed">Completed</option>
+              <option value="Not Achieved">Not Achieved</option>
             </select>
           </label>
           <label>
