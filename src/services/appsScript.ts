@@ -1,6 +1,6 @@
 import { DonationSummaryMilestoneInput, DonationSummaryResponse } from "../types/appsScript";
 
-const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxK5DUWnJuynEd4skeYLzHwjbaPdQKuR_aLdNPi6GwpzAWGtcot7raHJX9hDQr9Im8/exec";
+const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYDJdOsftVqTBwkhpp3vhThAKQRKW3b2HmDU11WPAn8k8rtwbVmWae_TZlw-c5P07A/exec";
 const appsScriptUrl = (import.meta.env.VITE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL).trim();
 const APPS_SCRIPT_TIMEOUT_MS = 8000;
 

@@ -136,7 +136,7 @@ export function AdminLoginPage() {
               className="admin-entry-link admin-entry-button"
               onClick={() => setEmail("joshuaverzosa879@gmail.com")}
             >
-              Fill Admin Email
+
             </button>
             <a className="admin-entry-link" href="/">Back to Homepage</a>
           </div>

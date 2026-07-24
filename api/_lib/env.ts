@@ -62,7 +62,7 @@ export function getEnv(key: string): string {
   }
   const val = osVal || fileVal || "";
   if (!val && (key === "VITE_APPS_SCRIPT_URL" || key === "APPS_SCRIPT_URL")) {
-    return "https://script.google.com/macros/s/AKfycbxK5DUWnJuynEd4skeYLzHwjbaPdQKuR_aLdNPi6GwpzAWGtcot7raHJX9hDQr9Im8/exec";
+    return "https://script.google.com/macros/s/AKfycbzYDJdOsftVqTBwkhpp3vhThAKQRKW3b2HmDU11WPAn8k8rtwbVmWae_TZlw-c5P07A/exec";
   }
   return val;
 }
