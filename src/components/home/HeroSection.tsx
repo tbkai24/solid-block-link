@@ -19,9 +19,9 @@ function isInternalHref(href: string) {
 export function HeroSection({ content, campaign, donateHref }: HeroSectionProps) {
   const { heroTitle, heroSummary, donateCta, lookupCta, currentCampaign } = content;
   const visibleCampaign = campaign ?? currentCampaign;
-  const hasActiveCampaign = Boolean(campaign?.id && campaign.title.trim());
-  const campaignSummary = hasActiveCampaign ? visibleCampaign.summary.trim() : "";
-  const resolvedDonateHref = donateHref || visibleCampaign.donateUrl || donateCta.href;
+  const hasActiveCampaign = Boolean(visibleCampaign?.id && visibleCampaign?.title?.trim());
+  const campaignSummary = visibleCampaign?.summary ? visibleCampaign.summary.trim() : "";
+  const resolvedDonateHref = donateHref || visibleCampaign?.donateUrl || donateCta.href;
 
   return (
     <section className="hero-panel motion-hero">
