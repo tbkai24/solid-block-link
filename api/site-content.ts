@@ -263,7 +263,7 @@ async function fetchInternalAdjustmentRowsForCampaigns(campaignIds: string[]) {
   }));
 }
 
-function toCampaignMilestones(rows: any[], summary: any, internalRows: any[] = [], internalDonorCount = 0, fallbackCampaign: any = null) {
+function toCampaignMilestones(rows: any[], summary: any, internalRows: any[] = [], fallbackCampaign: any = null) {
   const milestoneSummaryMap = new Map<string, DonationSummaryMilestoneResponse>(
     (summary?.milestones ?? []).map((item: any) => [item.milestoneId, item])
   );
@@ -468,7 +468,6 @@ export default async function handler(_req: any, res: any) {
         campaignMilestones,
         milestoneSummary,
         internalRows,
-        internalEntryCount,
         campaign
       ),
       currentCampaign: {
@@ -516,7 +515,6 @@ export default async function handler(_req: any, res: any) {
           item.milestoneRows,
           item.milestoneSummary,
           item.internalRows,
-          item.internalEntryCount,
           item.campaign
         ),
         milestoneCount: item.milestoneRows.length

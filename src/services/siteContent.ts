@@ -105,7 +105,6 @@ function toHomepageCampaignItem(
       milestoneRows,
       donationSummary,
       internalRows,
-      getInternalDonationEntryCount(internalRows),
       campaign
     ),
     milestoneCount: milestoneRows.length
@@ -195,7 +194,6 @@ function toCampaignMilestones(
   rows: CampaignMilestoneRow[],
   summary: SummaryInput,
   internalRows: InternalAdjustmentRow[] = [],
-  internalDonorCount = 0,
   fallbackCampaign?: CampaignRow | null
 ) {
   const milestoneSummaryMap = new Map(
@@ -480,7 +478,6 @@ export async function getSiteContent(): Promise<SiteContent> {
       primary.milestoneRows,
       primary.donationSummary,
       primary.internalRows,
-      getInternalDonationEntryCount(primary.internalRows),
       primary.campaign
     );
     partial.homepageCampaigns = metricsByCampaign.map((item) =>
