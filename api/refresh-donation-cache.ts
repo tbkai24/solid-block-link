@@ -16,8 +16,8 @@ export default async function handler(req: any, res: any) {
   }
 
   const reqUrl = new URL(req.url || "", "https://localhost");
-  const forceParam = reqUrl.searchParams.get("force") === "true";
-  const querySecret = reqUrl.searchParams.get("secret") || "";
+  const forceParam = req?.query?.force === "true" || reqUrl.searchParams.get("force") === "true";
+  const querySecret = req?.query?.secret || reqUrl.searchParams.get("secret") || "";
   const cronSecret = String(process.env.CRON_SECRET || "").trim();
   const requestSecret = getBearerToken(req) || String(req.headers?.["x-cron-secret"] || querySecret || "").trim();
 
