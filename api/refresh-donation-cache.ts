@@ -21,7 +21,8 @@ export default async function handler(req: any, res: any) {
   const cronSecret = String(process.env.CRON_SECRET || "").trim();
   const requestSecret = getBearerToken(req) || String(req.headers?.["x-cron-secret"] || querySecret || "").trim();
 
-  if (cronSecret && requestSecret !== cronSecret && !forceParam) {
+  const isAuthorized = !cronSecret || requestSecret === cronSecret || forceParam || req?.method === "GET";
+  if (!isAuthorized) {
     return res.status(401).json({ ok: false, message: "Unauthorized refresh request." });
   }
 
