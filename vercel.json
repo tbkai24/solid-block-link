@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/refresh-donation-cache",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
