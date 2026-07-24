@@ -8,7 +8,7 @@ const CACHE_TTL_MS = 60 * 1000;
 const SITE_CONTENT_CACHE_KEY = getSiteContentCacheKey();
 const SITE_CONTENT_REFRESH_EVENT = getSiteContentRefreshEvent();
 const SITE_CONTENT_REFRESH_KEY = getSiteContentRefreshKey();
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
 type UseSiteContentState = {
   content: SiteContent;
@@ -251,27 +251,7 @@ async function refreshSiteContent() {
     try {
       const nextShell = normalizeSiteContent(await getPublicSiteShell());
       sharedState = {
-        content: hadPreviousContent ? applyMetrics(nextShell, {
-          progress: previousContent.progress,
-          milestone: previousContent.milestone,
-          homepageCampaigns: previousContent.homepageCampaigns.map((item) => ({
-            id: item.id,
-            progress: item.progress,
-            milestone: item.milestone,
-            campaignMilestones: item.campaignMilestones.map((milestoneItem) => ({
-              id: milestoneItem.id,
-              raisedAmount: milestoneItem.raisedAmount,
-              donorCount: milestoneItem.donorCount,
-              percent: milestoneItem.percent
-            }))
-          })),
-          campaignMilestones: previousContent.campaignMilestones.map((item) => ({
-            id: item.id,
-            raisedAmount: item.raisedAmount,
-            donorCount: item.donorCount,
-            percent: item.percent
-          }))
-        }) : nextShell,
+        content: nextShell,
         loading: false,
         error: "",
         hasContent: hasRenderableSiteContent(nextShell)
