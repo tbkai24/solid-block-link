@@ -322,12 +322,11 @@ export async function getSiteContent(): Promise<SiteContent> {
     supabase
       .from("campaigns")
       .select("*")
-      .eq("featured", true)
       .eq("is_past", false)
       .eq("status", "Active")
       .order("homepage_order", { ascending: true })
       .order("last_updated", { ascending: false })
-      .limit(4)
+      .limit(6)
       .returns<CampaignRow[]>(),
     supabase.from("updates").select("*").order("published_at", { ascending: false }).limit(8).returns<UpdateRow[]>(),
     supabase.from("embeds").select("*").eq("featured", true).order("display_order", { ascending: true }).limit(4).returns<EmbedRow[]>(),

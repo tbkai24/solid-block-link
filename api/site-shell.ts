@@ -363,7 +363,7 @@ export default async function handler(_req: any, res: any) {
     }
 
     const [campaignsRes, updatesRes, embedsRes, pastRes] = await Promise.all([
-      supabase.from("campaigns").select("*").eq("featured", true).eq("is_past", false).eq("status", "Active").order("homepage_order", { ascending: true }).order("last_updated", { ascending: false }).limit(4),
+      supabase.from("campaigns").select("*").eq("is_past", false).eq("status", "Active").order("homepage_order", { ascending: true }).order("last_updated", { ascending: false }).limit(6),
       supabase.from("updates").select("*").order("published_at", { ascending: false }).limit(8),
       supabase.from("embeds").select("*").eq("featured", true).order("display_order", { ascending: true }).limit(4),
       supabase.from("campaigns").select("*").order("last_updated", { ascending: false }).limit(24)

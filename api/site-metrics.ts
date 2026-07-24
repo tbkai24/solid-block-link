@@ -253,12 +253,11 @@ export default async function handler(_req: any, res: any) {
     const campaignsRes = await supabase
       .from("campaigns")
       .select("*")
-      .eq("featured", true)
       .eq("is_past", false)
       .eq("status", "Active")
       .order("homepage_order", { ascending: true })
       .order("last_updated", { ascending: false })
-      .limit(4);
+      .limit(6);
 
     const featuredCampaigns = campaignsRes.data ?? [];
     const allMetrics = await Promise.all(featuredCampaigns.map(async (campaign: any) => {

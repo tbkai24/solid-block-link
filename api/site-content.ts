@@ -389,14 +389,15 @@ export default async function handler(_req: any, res: any) {
     }
 
     const [campaignRes, updatesRes, embedsRes, pastRes, fanProjectsRes] = await Promise.all([
-      supabase.from("campaigns").select("*").eq("featured", true).eq("is_past", false).eq("status", "Active").limit(1).maybeSingle(),
+      supabase.from("campaigns").select("*").eq("is_past", false).eq("status", "Active").order("homepage_order", { ascending: true }).order("last_updated", { ascending: false }).limit(6),
       supabase.from("updates").select("*").order("published_at", { ascending: false }).limit(8),
       supabase.from("embeds").select("*").eq("featured", true).order("display_order", { ascending: true }).limit(4),
       supabase.from("campaigns").select("*").order("last_updated", { ascending: false }).limit(24),
       supabase.from("fan_projects").select("*").eq("featured", true).order("display_order", { ascending: true }).order("published_at", { ascending: false })
     ]);
 
-    const campaign = campaignRes.data;
+    const featuredCampaigns = campaignRes.data ?? [];
+    const campaign = featuredCampaigns[0] ?? null;
     const archiveCampaigns = pastRes.data ?? [];
     const archiveMilestoneRes = archiveCampaigns.length
       ? await supabase.from("campaign_milestones").select("*").in("campaign_id", archiveCampaigns.map((item: any) => item.id)).order("display_order", { ascending: true })
@@ -408,25 +409,47 @@ export default async function handler(_req: any, res: any) {
     await Promise.all(archiveCampaigns.map(async (archiveCampaign: any) => {
       archiveSummaryByCampaign.set(archiveCampaign.id, await getCachedDonationSummary(archiveCampaign.id));
     }));
-    const [milestoneRes, internalRows] = campaign?.id
-      ? await Promise.all([
-          supabase.from("campaign_milestones").select("*").eq("campaign_id", campaign.id).order("display_order", { ascending: true }),
-          fetchInternalAdjustmentRows(campaign.id)
-        ])
-      : [{ data: [], error: null }, []];
-    const campaignMilestones = milestoneRes.data ?? [];
-    const internalEntryCount = getInternalDonationEntryCount(internalRows);
-    const cachedSummary = await getCachedDonationSummary(campaign?.id);
-    const milestoneSummary = cachedSummary ?? await getDonationSummaryWithMilestones(
-        campaignMilestones.map((item: any) => ({
+
+    const featuredIds = featuredCampaigns.map((item: any) => item.id);
+    const activeMilestoneRes = featuredIds.length
+      ? await supabase.from("campaign_milestones").select("*").in("campaign_id", featuredIds).order("display_order", { ascending: true })
+      : { data: [], error: null };
+    const allActiveMilestones = activeMilestoneRes.data ?? [];
+
+    const activeMetricsList = await Promise.all(featuredCampaigns.map(async (activeCampaignItem: any) => {
+      const milestoneRows = allActiveMilestones.filter((item: any) => item.campaign_id === activeCampaignItem.id);
+      const [internalRows, cachedSummary] = await Promise.all([
+        fetchInternalAdjustmentRows(activeCampaignItem.id),
+        getCachedDonationSummary(activeCampaignItem.id)
+      ]);
+      const milestoneSummary = cachedSummary ?? await getDonationSummaryWithMilestones(
+        milestoneRows.map((item: any) => ({
           milestoneId: item.id,
           title: item.title,
           rowStart: Number(item.row_start ?? 0),
           rowEnd: Number(item.row_end ?? 0)
         })),
-        String(campaign?.sheet_name ?? "")
+        String(activeCampaignItem?.sheet_name ?? "")
       ).catch(() => null);
-    const progress = toProgress(campaign, milestoneSummary, campaignMilestones, internalEntryCount);
+      const internalEntryCount = getInternalDonationEntryCount(internalRows);
+      const progress = toProgress(activeCampaignItem, milestoneSummary, milestoneRows, internalEntryCount);
+
+      return {
+        campaign: activeCampaignItem,
+        milestoneRows,
+        internalRows,
+        milestoneSummary,
+        internalEntryCount,
+        progress
+      };
+    }));
+
+    const primaryMetric = activeMetricsList[0] ?? null;
+    const campaignMilestones = primaryMetric?.milestoneRows ?? [];
+    const milestoneSummary = primaryMetric?.milestoneSummary ?? null;
+    const internalRows = primaryMetric?.internalRows ?? [];
+    const internalEntryCount = primaryMetric?.internalEntryCount ?? 0;
+    const progress = primaryMetric?.progress ?? base.progress;
 
     const payload = {
       ...base,
@@ -445,7 +468,8 @@ export default async function handler(_req: any, res: any) {
         campaignMilestones,
         milestoneSummary,
         internalRows,
-        internalEntryCount
+        internalEntryCount,
+        campaign
       ),
       currentCampaign: {
         id: campaign?.id ?? "",
@@ -462,6 +486,41 @@ export default async function handler(_req: any, res: any) {
         donorCount: Number(campaign?.donor_count ?? 0),
         internalDonorCount: 0
       },
+      homepageCampaigns: activeMetricsList.map((item) => ({
+        id: item.campaign.id,
+        title: item.campaign.title,
+        status: item.campaign.status ?? "Active",
+        summary: item.campaign.summary ?? "",
+        outcome: item.campaign.outcome ?? "",
+        donateUrl: item.campaign.donate_url ?? "",
+        sheetName: item.campaign.sheet_name ?? "",
+        homepageOrder: Number(item.campaign.homepage_order ?? 0),
+        goalAmount: Number(item.campaign.goal_amount ?? 0),
+        publicAmount: Number(item.campaign.public_amount ?? 0),
+        internalAmount: Number(item.campaign.internal_amount ?? 0),
+        donorCount: Number(item.campaign.donor_count ?? 0),
+        internalDonorCount: 0,
+        progress: item.progress,
+        milestone: item.progress.totalRaised > 0
+          ? {
+              title: `${formatCurrency(item.progress.totalRaised)} already raised for this campaign.`,
+              nextAmount: 0,
+              isVisible: true
+            }
+          : {
+              title: "",
+              nextAmount: 0,
+              isVisible: false
+            },
+        campaignMilestones: toCampaignMilestones(
+          item.milestoneRows,
+          item.milestoneSummary,
+          item.internalRows,
+          item.internalEntryCount,
+          item.campaign
+        ),
+        milestoneCount: item.milestoneRows.length
+      })),
       progress,
       updates: (Array.isArray(updatesRes.data) ? updatesRes.data : []).map((item: any) => ({
         id: item.id,
