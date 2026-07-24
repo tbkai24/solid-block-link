@@ -302,7 +302,7 @@ export default async function handler(_req: any, res: any) {
         lastUpdated: ""
       },
       campaignMilestones: primary
-        ? toCampaignMilestoneMetrics(primary.campaignMilestones, primary.summary, primary.internalRows)
+        ? toCampaignMilestoneMetrics(primary.campaignMilestones, primary.summary, primary.internalRows, primary.campaign)
         : [],
       milestone: primary && primary.progress.totalRaised > 0
         ? {
@@ -329,7 +329,7 @@ export default async function handler(_req: any, res: any) {
               nextAmount: 0,
               isVisible: false
             },
-        campaignMilestones: toCampaignMilestoneMetrics(item.campaignMilestones, item.summary, item.internalRows)
+        campaignMilestones: toCampaignMilestoneMetrics(item.campaignMilestones, item.summary, item.internalRows, item.campaign)
       }))
     });
   } catch (error) {
