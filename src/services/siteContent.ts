@@ -281,8 +281,9 @@ function toProgress(
 ) {
   const summaryPublicRaised = getSummaryPublicRaised(summary);
   const summaryPublicDonors = getSummaryPublicDonors(summary);
-  const publicRaised = (summary && summary.ok && summaryPublicRaised > 0) ? summaryPublicRaised : Number(campaign?.public_amount ?? 0);
-  const donorCount = (summary && summary.ok && summaryPublicDonors > 0) ? summaryPublicDonors : Number(campaign?.donor_count ?? 0);
+  const isSummaryOk = Boolean(summary && (summary as { ok?: boolean }).ok !== false);
+  const publicRaised = (isSummaryOk && summaryPublicRaised > 0) ? summaryPublicRaised : Number(campaign?.public_amount ?? 0);
+  const donorCount = (isSummaryOk && summaryPublicDonors > 0) ? summaryPublicDonors : Number(campaign?.donor_count ?? 0);
   const totalRaised = publicRaised + campaign.internal_amount;
   const goal = getCombinedMilestoneTarget(campaignMilestones) || campaign.goal_amount;
   const percent = goal > 0
@@ -428,7 +429,7 @@ export async function getSiteContent(): Promise<SiteContent> {
         internalAmount: Number(item.internal_amount ?? 0),
         donorCount: liveSummary ? livePublicDonors : Number(item.donor_count ?? 0),
         internalDonorCount: archiveInternalDonorsByCampaign.get(item.id) ?? 0,
-        campaignMilestones: toCampaignMilestones(milestoneRows, liveSummary, [], 0, item),
+        campaignMilestones: toCampaignMilestones(milestoneRows, liveSummary, [], item),
         milestoneCount: milestoneRows.length
       };
     });
