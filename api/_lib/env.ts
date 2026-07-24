@@ -50,7 +50,23 @@ function isDummyValue(val: string): boolean {
   );
 }
 
+const NEW_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYDJdOsftVqTBwkhpp3vhThAKQRKW3b2HmDU11WPAn8k8rtwbVmWae_TZlw-c5P07A/exec";
+const OLD_APPS_SCRIPT_ID = "AKfycbxK5DUWnJuynEd4skeYLzHwjbaPdQKuR_aLdNPi6GwpzAWGtcot7raHJX9hDQr9Im8";
+
 export function getEnv(key: string): string {
+  if (key === "VITE_APPS_SCRIPT_URL" || key === "APPS_SCRIPT_URL") {
+    const osVal = (process.env[key] || "").trim();
+    if (!osVal || osVal.includes(OLD_APPS_SCRIPT_ID) || isDummyValue(osVal)) {
+      const fileEnv = getFileEnv();
+      const fileVal = (fileEnv[key] || "").trim();
+      if (!fileVal || fileVal.includes(OLD_APPS_SCRIPT_ID) || isDummyValue(fileVal)) {
+        return NEW_APPS_SCRIPT_URL;
+      }
+      return fileVal;
+    }
+    return osVal;
+  }
+
   const osVal = process.env[key] || "";
   if (osVal && !isDummyValue(osVal)) {
     return osVal;
@@ -60,9 +76,5 @@ export function getEnv(key: string): string {
   if (fileVal && !isDummyValue(fileVal)) {
     return fileVal;
   }
-  const val = osVal || fileVal || "";
-  if (!val && (key === "VITE_APPS_SCRIPT_URL" || key === "APPS_SCRIPT_URL")) {
-    return "https://script.google.com/macros/s/AKfycbzYDJdOsftVqTBwkhpp3vhThAKQRKW3b2HmDU11WPAn8k8rtwbVmWae_TZlw-c5P07A/exec";
-  }
-  return val;
+  return osVal || fileVal || "";
 }
