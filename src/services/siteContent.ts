@@ -283,8 +283,8 @@ function toProgress(
 ) {
   const summaryPublicRaised = getSummaryPublicRaised(summary);
   const summaryPublicDonors = getSummaryPublicDonors(summary);
-  const publicRaised = summary ? summaryPublicRaised : campaign.public_amount;
-  const donorCount = summary ? summaryPublicDonors : campaign.donor_count;
+  const publicRaised = (summary && summary.ok && summaryPublicRaised > 0) ? summaryPublicRaised : Number(campaign?.public_amount ?? 0);
+  const donorCount = (summary && summary.ok && summaryPublicDonors > 0) ? summaryPublicDonors : Number(campaign?.donor_count ?? 0);
   const totalRaised = publicRaised + campaign.internal_amount;
   const goal = getCombinedMilestoneTarget(campaignMilestones) || campaign.goal_amount;
   const percent = goal > 0

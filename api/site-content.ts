@@ -340,8 +340,8 @@ function toCampaignMilestones(rows: any[], summary: any, internalRows: any[] = [
 function toProgress(campaign: any, summary: any, campaignMilestones: any[] = [], internalDonorCount = 0) {
   const summaryPublicRaised = getSummaryPublicRaised(summary);
   const summaryPublicDonors = getSummaryPublicDonors(summary);
-  const publicRaised = summary ? summaryPublicRaised : campaign?.public_amount ?? 0;
-  const donorCount = summary ? summaryPublicDonors : campaign?.donor_count ?? 0;
+  const publicRaised = (summary && summary.ok && summaryPublicRaised > 0) ? summaryPublicRaised : Number(campaign?.public_amount ?? 0);
+  const donorCount = (summary && summary.ok && summaryPublicDonors > 0) ? summaryPublicDonors : Number(campaign?.donor_count ?? 0);
   const internalRaised = campaign?.internal_amount ?? 0;
   const goal = getCombinedMilestoneTarget(campaignMilestones) || (campaign?.goal_amount ?? 0);
   const totalRaised = publicRaised + internalRaised;

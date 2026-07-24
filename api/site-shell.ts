@@ -315,7 +315,10 @@ function toHomepageCampaign(campaign: any, milestoneRows: any[] = [], summary: a
 }
 
 function toShellProgress(campaign: any, milestoneRows: any[] = [], summary: any = null) {
-  const publicRaised = summary ? getSummaryPublicRaised(summary) : Number(campaign?.public_amount ?? 0);
+  const summaryPublicRaised = getSummaryPublicRaised(summary);
+  const summaryPublicDonors = getSummaryPublicDonors(summary);
+  const publicRaised = (summary && summary.ok && summaryPublicRaised > 0) ? summaryPublicRaised : Number(campaign?.public_amount ?? 0);
+  const donorCount = (summary && summary.ok && summaryPublicDonors > 0) ? summaryPublicDonors : Number(campaign?.donor_count ?? 0);
   const internalRaised = Number(campaign?.internal_amount ?? 0);
   const totalRaised = publicRaised + internalRaised;
   const goal = getCombinedMilestoneTarget(milestoneRows) || Number(campaign?.goal_amount ?? 0);
@@ -326,7 +329,7 @@ function toShellProgress(campaign: any, milestoneRows: any[] = [], summary: any 
   return {
     totalRaised,
     publicRaised,
-    donorCount: summary ? getSummaryPublicDonors(summary) : Number(campaign?.donor_count ?? 0),
+    donorCount,
     internalDonorCount: 0,
     goal,
     internalRaised,
