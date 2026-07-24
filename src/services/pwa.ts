@@ -114,10 +114,9 @@ export async function sendLocalNotification(title: string, options?: Notificatio
       await reg.showNotification(title, {
         icon: "/sbllogo.jpg",
         badge: "/sbllogo.jpg",
-        vibrate: [100, 50, 100],
         data: { url: options?.url || "/" },
         ...options
-      });
+      } as unknown as NotificationOptions);
       return true;
     } else {
       new Notification(title, {
