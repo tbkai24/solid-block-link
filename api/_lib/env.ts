@@ -60,5 +60,9 @@ export function getEnv(key: string): string {
   if (fileVal && !isDummyValue(fileVal)) {
     return fileVal;
   }
-  return osVal || fileVal || "";
+  const val = osVal || fileVal || "";
+  if (!val && (key === "VITE_APPS_SCRIPT_URL" || key === "APPS_SCRIPT_URL")) {
+    return "https://script.google.com/macros/s/AKfycbxK5DUWnJuynEd4skeYLzHwjbaPdQKuR_aLdNPi6GwpzAWGtcot7raHJX9hDQr9Im8/exec";
+  }
+  return val;
 }

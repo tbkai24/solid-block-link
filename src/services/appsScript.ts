@@ -1,6 +1,7 @@
 import { DonationSummaryMilestoneInput, DonationSummaryResponse } from "../types/appsScript";
 
-const appsScriptUrl = (import.meta.env.VITE_APPS_SCRIPT_URL || "").trim();
+const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxK5DUWnJuynEd4skeYLzHwjbaPdQKuR_aLdNPi6GwpzAWGtcot7raHJX9hDQr9Im8/exec";
+const appsScriptUrl = (import.meta.env.VITE_APPS_SCRIPT_URL || DEFAULT_APPS_SCRIPT_URL).trim();
 const APPS_SCRIPT_TIMEOUT_MS = 8000;
 
 function createTimeoutController(timeoutMs: number) {
