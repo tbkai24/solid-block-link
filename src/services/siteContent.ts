@@ -201,8 +201,8 @@ function toCampaignMilestones(
   );
   const internalMilestoneMap = createInternalMilestoneMap(internalRows);
 
-  const campaignPublicRaised = getSummaryPublicRaised(summary) || Number(fallbackCampaign?.public_amount ?? 0);
-  const campaignPublicDonors = getSummaryPublicDonors(summary) || Number(fallbackCampaign?.donor_count ?? 0);
+  const campaignPublicRaised = Math.max(getSummaryPublicRaised(summary), Number(fallbackCampaign?.public_amount ?? 0));
+  const campaignPublicDonors = Math.max(getSummaryPublicDonors(summary), Number(fallbackCampaign?.donor_count ?? 0));
 
   const unassignedInternal = internalRows.filter((item) => !item.milestone_id);
   const unassignedInternalAmount = unassignedInternal.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);

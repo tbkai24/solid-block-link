@@ -222,8 +222,8 @@ function toShellCampaignMilestones(rows: any[] = [], summary: any = null, intern
   );
   const internalMilestoneMap = createInternalMilestoneMap(internalRows);
 
-  const campaignPublicRaised = getSummaryPublicRaised(summary) || Number(fallbackCampaign?.public_amount ?? 0);
-  const campaignPublicDonors = getSummaryPublicDonors(summary) || Number(fallbackCampaign?.donor_count ?? 0);
+  const campaignPublicRaised = Math.max(getSummaryPublicRaised(summary), Number(fallbackCampaign?.public_amount ?? 0));
+  const campaignPublicDonors = Math.max(getSummaryPublicDonors(summary), Number(fallbackCampaign?.donor_count ?? 0));
 
   const unassignedInternal = (internalRows ?? []).filter((item: any) => !item?.milestone_id);
   const unassignedInternalAmount = unassignedInternal.reduce((sum: number, item: any) => sum + Number(item?.amount ?? 0), 0);
