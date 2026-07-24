@@ -1,4 +1,5 @@
-import { FiArrowRight, FiSearch, FiUsers, FiShield } from "react-icons/fi";
+import { useState, useRef } from "react";
+import { FiArrowRight, FiSearch, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 import { CampaignItem, SiteContent } from "../../types/content";
@@ -18,10 +19,22 @@ function isInternalHref(href: string) {
 
 export function HeroSection({ content, campaign, donateHref }: HeroSectionProps) {
   const { heroTitle, heroSummary, donateCta, lookupCta, currentCampaign } = content;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const cardBodyRef = useRef<HTMLDivElement>(null);
+
   const visibleCampaign = campaign ?? currentCampaign;
   const hasActiveCampaign = Boolean(visibleCampaign?.id && visibleCampaign?.title?.trim());
   const campaignSummary = visibleCampaign?.summary ? visibleCampaign.summary.trim() : "";
   const resolvedDonateHref = donateHref || visibleCampaign?.donateUrl || donateCta.href;
+
+  const isLongSummary = campaignSummary.length > 200 || campaignSummary.includes("\n");
+
+  const handleToggleExpand = () => {
+    if (isExpanded && cardBodyRef.current) {
+      cardBodyRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    setIsExpanded((prev) => !prev);
+  };
 
   return (
     <section className="hero-panel motion-hero">
@@ -65,13 +78,29 @@ export function HeroSection({ content, campaign, donateHref }: HeroSectionProps)
         </div>
       </div>
       <div className="hero-card">
-        <p className={hasActiveCampaign ? "hero-card-label breathing-active-chip" : "hero-card-label"}>{hasActiveCampaign ? "Active campaign" : "Campaign status"}</p>
+        <p className={hasActiveCampaign ? "hero-card-label breathing-active-chip" : "hero-card-label"}>
+          {hasActiveCampaign ? "Active campaign" : "Campaign status"}
+        </p>
         <h2 className="hero-card-title">{hasActiveCampaign ? visibleCampaign.title : "No active campaign"}</h2>
-        <div className="hero-card-body">
+        <div
+          ref={cardBodyRef}
+          className={`hero-card-body ${isLongSummary && !isExpanded ? "collapsed" : "expanded"}`}
+        >
           <p className="hero-card-summary">
             {campaignSummary || "Campaign records and completed drives are available in the campaign archive."}
           </p>
         </div>
+        {isLongSummary ? (
+          <button
+            type="button"
+            className="hero-card-toggle-btn"
+            onClick={handleToggleExpand}
+            aria-expanded={isExpanded}
+          >
+            <span>{isExpanded ? "View Less" : "View More"}</span>
+            {isExpanded ? <FiChevronUp aria-hidden="true" /> : <FiChevronDown aria-hidden="true" />}
+          </button>
+        ) : null}
       </div>
     </section>
   );
