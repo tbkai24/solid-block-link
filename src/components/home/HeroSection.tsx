@@ -66,10 +66,12 @@ export function HeroSection({ content, campaign, donateHref }: HeroSectionProps)
       </div>
       <div className="hero-card">
         <p className={hasActiveCampaign ? "hero-card-label breathing-active-chip" : "hero-card-label"}>{hasActiveCampaign ? "Active campaign" : "Campaign status"}</p>
-        <h2>{hasActiveCampaign ? visibleCampaign.title : "No active campaign"}</h2>
-        <p>
-          {campaignSummary || "Campaign records and completed drives are available in the campaign archive."}
-        </p>
+        <h2 className="hero-card-title">{hasActiveCampaign ? visibleCampaign.title : "No active campaign"}</h2>
+        <div className="hero-card-body">
+          <p className="hero-card-summary">
+            {campaignSummary || "Campaign records and completed drives are available in the campaign archive."}
+          </p>
+        </div>
       </div>
     </section>
   );
