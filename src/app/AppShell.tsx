@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AnnouncementPopupQueue } from "../components/layout/AnnouncementPopupQueue";
+import { PwaInstallPrompt } from "../components/layout/PwaInstallPrompt";
 import { SiteFooter } from "../components/layout/SiteFooter";
 import { SiteHeader } from "../components/layout/SiteHeader";
 import { SpotifyMiniPlayer } from "../components/layout/SpotifyMiniPlayer";
@@ -38,6 +39,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <AnnouncementPopupQueue />
+      <PwaInstallPrompt />
       <SpotifyMiniPlayer />
       <SiteFooter />
     </div>

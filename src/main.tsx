@@ -3,6 +3,9 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./app/router";
 import { MaintenancePage } from "./pages/MaintenancePage";
+import { registerServiceWorker } from "./services/pwa";
+
+registerServiceWorker();
 
 const maintenanceMode = import.meta.env.VITE_MAINTENANCE_MODE === "true";
 const allowAdminDuringMaintenance =

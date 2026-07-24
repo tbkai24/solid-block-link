@@ -10,6 +10,7 @@ import { AdminTicketsPanel } from "../../components/admin/AdminTicketsPanel";
 import { AdminUsersPanel } from "../../components/admin/AdminUsersPanel";
 import { useAuthProfile } from "../../hooks/useAuthProfile";
 import { supabase } from "../../lib/supabase";
+import { sendLocalNotification } from "../../services/pwa";
 
 type AdminSection = "campaigns" | "updates" | "donations" | "liquidation" | "fan-projects" | "tickets" | "users";
 
@@ -98,9 +99,23 @@ export function AdminPage() {
           <h1>Hi, {adminGreetingName}! Welcome back.</h1>
           <p className="muted-text">Manage campaigns, fan projects, updates, donations, tickets, users, and liquidation records.</p>
         </div>
-        <button className="button secondary" type="button" onClick={handleLogout}>
-          Log Out
-        </button>
+        <div className="admin-topbar-actions" style={{ display: "flex", gap: "8px" }}>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => {
+              void sendLocalNotification("Solid Block Link • Admin Push Test 🚀", {
+                body: "Push notification alert system is active for mobile and laptop app users!",
+                url: "/admin"
+              });
+            }}
+          >
+            Test Push Alert
+          </button>
+          <button className="button secondary" type="button" onClick={handleLogout}>
+            Log Out
+          </button>
+        </div>
       </header>
       <div className="admin-layout">
         <aside className="admin-sidebar-panel">
