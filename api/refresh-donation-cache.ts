@@ -15,10 +15,13 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ ok: false, message: "Method not allowed." });
   }
 
+  const reqUrl = new URL(req.url || "", "https://localhost");
+  const forceParam = reqUrl.searchParams.get("force") === "true";
+  const querySecret = reqUrl.searchParams.get("secret") || "";
   const cronSecret = String(process.env.CRON_SECRET || "").trim();
-  const requestSecret = getBearerToken(req) || String(req.headers?.["x-cron-secret"] || req.query?.secret || "").trim();
+  const requestSecret = getBearerToken(req) || String(req.headers?.["x-cron-secret"] || querySecret || "").trim();
 
-  if (cronSecret && requestSecret !== cronSecret && req.query?.force !== "true") {
+  if (cronSecret && requestSecret !== cronSecret && !forceParam) {
     return res.status(401).json({ ok: false, message: "Unauthorized refresh request." });
   }
 
