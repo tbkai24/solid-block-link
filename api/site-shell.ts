@@ -402,7 +402,7 @@ export default async function handler(_req: any, res: any) {
     return res.status(200).json({
       ...base,
       milestone: toShellMilestone(progress.totalRaised),
-      campaignMilestones: toShellCampaignMilestones(currentMilestoneRows, currentSummary),
+      campaignMilestones: toShellCampaignMilestones(currentMilestoneRows, currentSummary, [], currentCampaignRow),
       currentCampaign: {
         id: currentCampaignRow?.id ?? "",
         title: currentCampaignRow?.title ?? "",
