@@ -39,7 +39,7 @@ export function getSupabaseServerKey() {
 }
 
 export function getAppsScriptUrl() {
-  return (getEnv("VITE_APPS_SCRIPT_URL") || getEnv("APPS_SCRIPT_URL") || "").trim();
+  return getEnv("DONATION_APPS_SCRIPT_URL").trim();
 }
 
 export function getSupabase() {

@@ -89,7 +89,7 @@ function buildResultFromUnknown(data) {
 }
 
 async function lookupViaAppsScript(code) {
-  const base = String(getEnv("APPS_SCRIPT_URL") || getEnv("VITE_APPS_SCRIPT_URL") || "").trim();
+  const base = String(getEnv("LOOKUP_APPS_SCRIPT_URL") || getEnv("DONATION_APPS_SCRIPT_URL") || "").trim();
   if (!base) return null;
 
   try {

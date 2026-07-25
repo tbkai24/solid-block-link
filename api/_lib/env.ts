@@ -45,26 +45,39 @@ function isDummyValue(val: string): boolean {
     lower.includes("your-project-ref") ||
     lower.includes("your-public-anon-key") ||
     lower.includes("your-service-role-key") ||
+    lower.includes("your_donation_script_id") ||
+    lower.includes("your_lookup_script_id") ||
+    lower.includes("your_deployment_id") ||
     lower === "placeholder" ||
     lower === "example"
   );
 }
 
-const NEW_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzYDJdOsftVqTBwkhpp3vhThAKQRKW3b2HmDU11WPAn8k8rtwbVmWae_TZlw-c5P07A/exec";
-const OLD_APPS_SCRIPT_ID = "AKfycbxK5DUWnJuynEd4skeYLzHwjbaPdQKuR_aLdNPi6GwpzAWGtcot7raHJX9hDQr9Im8";
-
 export function getEnv(key: string): string {
-  if (key === "VITE_APPS_SCRIPT_URL" || key === "APPS_SCRIPT_URL") {
-    const osVal = (process.env[key] || "").trim();
-    if (!osVal || osVal.includes(OLD_APPS_SCRIPT_ID) || isDummyValue(osVal)) {
+  // Donation Summary Apps Script URL
+  if (key === "DONATION_APPS_SCRIPT_URL") {
+    let rawVal = (process.env.DONATION_APPS_SCRIPT_URL || "").trim();
+    if (!rawVal || isDummyValue(rawVal)) {
       const fileEnv = getFileEnv();
-      const fileVal = (fileEnv[key] || "").trim();
-      if (!fileVal || fileVal.includes(OLD_APPS_SCRIPT_ID) || isDummyValue(fileVal)) {
-        return NEW_APPS_SCRIPT_URL;
-      }
-      return fileVal;
+      rawVal = (fileEnv.DONATION_APPS_SCRIPT_URL || "").trim();
     }
-    return osVal;
+    if (rawVal && !rawVal.startsWith("http")) {
+      return `https://script.google.com/macros/s/${rawVal}/exec`;
+    }
+    return rawVal;
+  }
+
+  // Lookup / Receipt Verification Apps Script URL
+  if (key === "LOOKUP_APPS_SCRIPT_URL") {
+    let rawVal = (process.env.LOOKUP_APPS_SCRIPT_URL || "").trim();
+    if (!rawVal || isDummyValue(rawVal)) {
+      const fileEnv = getFileEnv();
+      rawVal = (fileEnv.LOOKUP_APPS_SCRIPT_URL || "").trim();
+    }
+    if (rawVal && !rawVal.startsWith("http")) {
+      return `https://script.google.com/macros/s/${rawVal}/exec`;
+    }
+    return rawVal;
   }
 
   const osVal = process.env[key] || "";

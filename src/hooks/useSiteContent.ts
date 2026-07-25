@@ -8,7 +8,7 @@ const CACHE_TTL_MS = 60 * 1000;
 const SITE_CONTENT_CACHE_KEY = getSiteContentCacheKey();
 const SITE_CONTENT_REFRESH_EVENT = getSiteContentRefreshEvent();
 const SITE_CONTENT_REFRESH_KEY = getSiteContentRefreshKey();
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 5;
 
 type UseSiteContentState = {
   content: SiteContent;
