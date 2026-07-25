@@ -1,5 +1,6 @@
 import { KeyboardEvent, useRef, useState } from "react";
 import { FiCheckCircle, FiCreditCard, FiHash, FiLoader, FiSearch } from "react-icons/fi";
+import { formatCurrency } from "../services/format";
 
 type DonationRecord = {
   sourceSpreadsheetId: string;
@@ -147,7 +148,7 @@ export function DonationLookupPage() {
                 </div>
                 <div>
                   <span>Amount Donated</span>
-                  <strong>PHP {record.amount}</strong>
+                  <strong>{!Number.isNaN(Number(record.amount)) && Number(record.amount) > 0 ? formatCurrency(Number(record.amount)) : `PHP ${record.amount}`}</strong>
                 </div>
                 <div>
                   <span>Date of Transfer</span>

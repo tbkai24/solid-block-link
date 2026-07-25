@@ -1,8 +1,10 @@
 export function formatCurrency(value: number) {
+  const hasDecimals = value % 1 !== 0;
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
-    maximumFractionDigits: 0
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2
   }).format(value);
 }
 
